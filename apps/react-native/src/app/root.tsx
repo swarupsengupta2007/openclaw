@@ -1,11 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
-import { HomeScreen } from '../features/home/home-screen';
+import React from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppStoreProvider } from './app-store';
+import { AppShell } from './app-shell';
 
 export function RootApp() {
   return (
-    <>
-      <HomeScreen />
-      <StatusBar style="light" />
-    </>
+    <SafeAreaProvider>
+      <AppStoreProvider>
+        <AppShell />
+        <StatusBar style="light" />
+      </AppStoreProvider>
+    </SafeAreaProvider>
   );
 }
