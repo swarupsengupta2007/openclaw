@@ -20,7 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: 'ai.openclaw.reactnative',
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#10121A',
+      backgroundColor: '#FFFFFF',
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: true,
@@ -31,7 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
-    backgroundColor: '#10121A',
+    backgroundColor: '#FFFFFF',
   },
   experiments: {
     reactCompiler: true,

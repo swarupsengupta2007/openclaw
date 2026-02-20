@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useState } from 'react';
 import {
   FlatList,
@@ -8,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useAppStore } from '../../app/app-store';
-import { colors } from '../../app/theme';
+import { colors, gradients, radii, shadows, typography } from '../../app/theme';
 import { ActionButton, Label, Section } from '../shared/ui';
 
 export function ChatScreen() {
@@ -16,13 +17,13 @@ export function ChatScreen() {
   const [message, setMessage] = useState('');
 
   const sortedMessages = useMemo(
-    () => [...state.chatMessages].sort((a, b) => a.timestamp - b.timestamp),
+    () => [...state.chatMessages].toSorted((a, b) => a.timestamp - b.timestamp),
     [state.chatMessages],
   );
 
   return (
     <View style={styles.container}>
-      <Section style={styles.sessionSection}>
+      <Section>
         <Label text="Session" />
         <Text style={styles.sessionHint}>Live stream + history merge for the selected session key.</Text>
         <View style={styles.sessionChips}>
@@ -37,7 +38,13 @@ export function ChatScreen() {
                 }}
                 style={[styles.sessionChip, active ? styles.sessionChipActive : undefined]}
               >
-                <Text style={active ? styles.sessionChipTextActive : styles.sessionChipText}>{sessionKey}</Text>
+                {active ? (
+                  <LinearGradient colors={gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.sessionChipGradient}>
+                    <Text style={styles.sessionChipTextActive}>{sessionKey}</Text>
+                  </LinearGradient>
+                ) : (
+                  <Text style={styles.sessionChipText}>{sessionKey}</Text>
+                )}
               </Pressable>
             );
           })}
@@ -65,10 +72,10 @@ export function ChatScreen() {
         }
       />
 
-      <Section>
+      <View style={styles.composer}>
         <TextInput
           placeholder="Message"
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.textTertiary}
           value={message}
           onChangeText={setMessage}
           style={styles.composerInput}
@@ -97,7 +104,7 @@ export function ChatScreen() {
             disabled={state.chatSending}
           />
         </View>
-      </Section>
+      </View>
     </View>
   );
 }
@@ -116,11 +123,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     gap: 12,
-    padding: 12,
+    padding: 20,
     paddingBottom: 100,
-  },
-  sessionSection: {
-    gap: 10,
   },
   sessionChips: {
     flexDirection: 'row',
@@ -128,20 +132,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sessionHint: {
-    color: colors.textMuted,
-    fontSize: 12,
+    ...typography.callout,
+    color: colors.textSecondary,
   },
   sessionChip: {
-    backgroundColor: colors.surfaceStrong,
+    backgroundColor: colors.card,
     borderColor: colors.border,
-    borderRadius: 999,
+    borderRadius: radii.pill,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    overflow: 'hidden',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
   },
   sessionChipActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+  },
+  sessionChipGradient: {
+    borderRadius: radii.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
   },
   sessionChipText: {
     color: colors.text,
@@ -149,7 +160,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sessionChipTextActive: {
-    color: '#071711',
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
   },
@@ -157,31 +168,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   messagesContent: {
-    gap: 8,
+    gap: 10,
     paddingBottom: 8,
   },
   bubble: {
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: radii.card,
     gap: 6,
-    padding: 10,
+    padding: 14,
+    ...shadows.sm,
   },
   bubbleUser: {
-    backgroundColor: '#113022',
-    borderColor: '#1A4935',
+    backgroundColor: colors.accentSoft,
   },
   bubbleAssistant: {
-    backgroundColor: '#1A2232',
-    borderColor: '#2A3B57',
+    backgroundColor: colors.card,
   },
   bubbleSystem: {
-    backgroundColor: '#302718',
-    borderColor: '#5E4725',
+    backgroundColor: colors.warningSoft,
   },
   bubbleRole: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
+    ...typography.caption2,
+    color: colors.textSecondary,
+    fontWeight: '600',
     letterSpacing: 0.6,
   },
   bubbleText: {
@@ -189,20 +197,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
   },
+  composer: {
+    backgroundColor: colors.card,
+    borderRadius: radii.card,
+    gap: 12,
+    padding: 16,
+    ...shadows.md,
+  },
   composerInput: {
-    backgroundColor: colors.surfaceStrong,
-    borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radii.input,
     color: colors.text,
-    minHeight: 84,
-    paddingHorizontal: 12,
-    paddingTop: 10,
+    minHeight: 80,
+    paddingHorizontal: 14,
+    paddingTop: 12,
   },
   composerActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 8,
   },
 });

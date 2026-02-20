@@ -1,8 +1,10 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { Monitor } from 'lucide-react-native';
 import React from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 import { useAppStore } from '../../app/app-store';
-import { colors } from '../../app/theme';
-import { ActionButton, Input, Label, Section, SectionTitle } from '../shared/ui';
+import { colors, gradients, shadows, typography } from '../../app/theme';
+import { ActionButton, Input, Section, SectionTitle } from '../shared/ui';
 
 export function ScreenScreen() {
   const { state } = useAppStore();
@@ -11,10 +13,23 @@ export function ScreenScreen() {
 
   return (
     <View style={styles.container}>
-      <Section>
-        <SectionTitle title="Canvas" />
-        <Label text="Gateway Canvas Host" />
-        <Input value={canvasUrl} editable={false} />
+      {/* Visual hero */}
+      <View style={styles.hero}>
+        <LinearGradient
+          colors={gradients.accent}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroIcon}
+        >
+          <Monitor size={32} color="#FFFFFF" strokeWidth={2} />
+        </LinearGradient>
+        <Text style={styles.heroTitle}>Canvas</Text>
+        <Text style={styles.heroSubtitle}>Gateway screen sharing & display</Text>
+      </View>
+
+      <Section accent>
+        <SectionTitle title="Canvas URL" />
+        <Input value={canvasUrl} editable={false} style={styles.monoInput} />
         <ActionButton
           label="Open Canvas URL"
           onPress={() => {
@@ -28,8 +43,17 @@ export function ScreenScreen() {
 
       <Section>
         <SectionTitle title="Status" />
-        <Text style={styles.value}>Gateway: {state.phase}</Text>
-        <Text style={styles.value}>Session: {state.sessionKey}</Text>
+        <View style={styles.statusRow}>
+          <View style={styles.statusItem}>
+            <Text style={styles.statusLabel}>Gateway</Text>
+            <Text style={styles.statusValue}>{state.phase}</Text>
+          </View>
+          <View style={styles.statusDivider} />
+          <View style={styles.statusItem}>
+            <Text style={styles.statusLabel}>Session</Text>
+            <Text style={styles.statusValue}>{state.sessionKey}</Text>
+          </View>
+        </View>
       </Section>
     </View>
   );
@@ -38,16 +62,59 @@ export function ScreenScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    gap: 12,
-    padding: 12,
+    gap: 16,
+    padding: 20,
+  },
+  hero: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 20,
+  },
+  heroIcon: {
+    alignItems: 'center',
+    borderRadius: 24,
+    height: 72,
+    justifyContent: 'center',
+    marginBottom: 4,
+    width: 72,
+    ...shadows.lg,
+  },
+  heroTitle: {
+    ...typography.title1,
+    color: colors.text,
+  },
+  heroSubtitle: {
+    ...typography.callout,
+    color: colors.textSecondary,
   },
   note: {
-    color: colors.textMuted,
-    fontSize: 13,
+    ...typography.callout,
+    color: colors.textSecondary,
     lineHeight: 20,
   },
-  value: {
+  monoInput: {
+    ...typography.mono,
+  },
+  statusRow: {
+    flexDirection: 'row',
+  },
+  statusItem: {
+    flex: 1,
+    gap: 4,
+  },
+  statusDivider: {
+    backgroundColor: colors.border,
+    marginHorizontal: 12,
+    width: StyleSheet.hairlineWidth,
+  },
+  statusLabel: {
+    ...typography.caption1,
+    color: colors.textSecondary,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  statusValue: {
+    ...typography.headline,
     color: colors.text,
-    fontSize: 14,
   },
 });
