@@ -17,7 +17,7 @@ export function ChatScreen() {
   const [message, setMessage] = useState('');
 
   const sortedMessages = useMemo(
-    () => [...state.chatMessages].toSorted((a, b) => a.timestamp - b.timestamp),
+    () => [...state.chatMessages].sort((a, b) => a.timestamp - b.timestamp),
     [state.chatMessages],
   );
 
