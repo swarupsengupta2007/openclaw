@@ -68,6 +68,14 @@ export type GatewayHelloOk = {
     connId?: string;
   };
   features?: { methods?: string[]; events?: string[] };
+  snapshot?: {
+    sessionDefaults?: {
+      defaultAgentId?: string;
+      mainKey?: string;
+      mainSessionKey?: string;
+      scope?: string;
+    };
+  };
   auth?: {
     role?: string;
     scopes?: string[];
@@ -101,6 +109,16 @@ export type SessionsListResponse = {
   sessions?: {
     key: string;
     title?: string;
+    modelProvider?: string;
+    model?: string;
+  }[];
+};
+
+export type ModelsListResponse = {
+  models?: {
+    id: string;
+    name?: string;
+    provider: string;
   }[];
 };
 

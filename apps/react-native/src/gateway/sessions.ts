@@ -38,6 +38,7 @@ export type GatewaySessionConnectConfig = {
 
 export type SessionEventHandlers = {
   onPhaseChange: (phase: ConnectionPhase, message?: string) => void;
+  onHello?: (hello: GatewayHelloOk, role: GatewayClientRole) => void;
   onChatEvent: (payload: GatewayChatEventPayload) => void;
   onAgentEvent: (payload: GatewayAgentEventPayload) => void;
   onRawEvent?: (event: GatewayEventFrame, role: GatewayClientRole) => void;
@@ -215,7 +216,7 @@ export class GatewaySessionManager {
     });
 
     try {
-      await nodeClient.connect({
+      const nodeHello = await nodeClient.connect({
         role: 'node',
         auth: config.auth,
         caps: buildCaps(config.capabilityConfig),
@@ -230,7 +231,7 @@ export class GatewaySessionManager {
         },
       });
 
-      await operatorClient.connect({
+      const operatorHello = await operatorClient.connect({
         role: 'operator',
         scopes: ['operator.read', 'operator.write', 'operator.talk.secrets'],
         auth: config.auth,
@@ -246,6 +247,8 @@ export class GatewaySessionManager {
       this.nodeClient = nodeClient;
       this.operatorClient = operatorClient;
       this.reconnectAttempts = 0;
+      this.handlers.onHello?.(nodeHello, 'node');
+      this.handlers.onHello?.(operatorHello, 'operator');
       this.handlers.onPhaseChange('connected', 'Connected');
     } catch (error) {
       nodeClient.disconnect();
