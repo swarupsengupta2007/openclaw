@@ -226,10 +226,14 @@ export function renderOverview(props: OverviewProps) {
                     />
                     <button
                       type="button"
-                      class="btn btn--sm"
+                      class="btn btn--icon ${props.showGatewayToken ? "active" : ""}"
+                      style="width: 36px; height: 36px;"
+                      title=${props.showGatewayToken ? "Hide token" : "Show token"}
+                      aria-label="Toggle token visibility"
+                      aria-pressed=${props.showGatewayToken}
                       @click=${props.onToggleGatewayTokenVisibility}
                     >
-                      ${props.showGatewayToken ? "Hide" : "Show"}
+                      ${props.showGatewayToken ? icons.eye : icons.eyeOff}
                     </button>
                   </div>
                 </label>
