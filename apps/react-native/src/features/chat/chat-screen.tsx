@@ -1,6 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronDown, ChevronUp, Cpu, Plus, RefreshCw, SendHorizontal, Square } from 'lucide-react-native';
+import MarkdownIt from 'markdown-it';
+import markdownItTaskLists from 'markdown-it-task-lists';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Markdown, { renderRules as markdownDefaultRules, type RenderRules } from 'react-native-markdown-renderer';
 import {
   ActivityIndicator,
   FlatList,
@@ -25,6 +28,179 @@ type ThreadItem = ChatMessage | (ChatMessage & { streaming: true });
 const autoScrollThreshold = 96;
 const sessionChipLabelMaxLength = 20;
 const modelLabelMaxLength = 26;
+const gfmMarkdownParser = new MarkdownIt({
+  breaks: false,
+  linkify: true,
+  typographer: true,
+});
+gfmMarkdownParser.use(markdownItTaskLists, { enabled: false, label: false, labelAfter: false });
+
+const markdownMessageRules: RenderRules = {
+  html_block: (node, children, parent, styles) => markdownDefaultRules.html_block(node, children, parent, styles),
+  html_inline: (node, children, parent, styles) => {
+    const token = typeof node.content === 'string' ? node.content.trim() : '';
+    if (token.includes('task-list-item-checkbox')) {
+      const checked = token.includes('checked');
+      return (
+        <Text key={node.key} style={checked ? gfmTaskCheckboxStyles.checked : gfmTaskCheckboxStyles.unchecked}>
+          {checked ? '☑ ' : '☐ '}
+        </Text>
+      );
+    }
+    return markdownDefaultRules.html_inline(node, children, parent, styles);
+  },
+};
+
+const gfmTaskCheckboxStyles = StyleSheet.create({
+  checked: {
+    ...typography.callout,
+    color: colors.success,
+    fontWeight: '700',
+  },
+  unchecked: {
+    ...typography.callout,
+    color: colors.textSecondary,
+    fontWeight: '700',
+  },
+});
+
+const markdownMessageStyles = {
+  body: {
+    ...typography.callout,
+    color: colors.text,
+  },
+  paragraph: {
+    ...typography.callout,
+    color: colors.text,
+    marginTop: 0,
+    marginBottom: 8,
+  },
+  text: {
+    ...typography.callout,
+    color: colors.text,
+  },
+  strong: {
+    color: colors.text,
+    fontWeight: '700',
+  },
+  em: {
+    color: colors.text,
+    fontStyle: 'italic',
+  },
+  link: {
+    color: colors.accent,
+    textDecorationLine: 'underline',
+  },
+  blockquote: {
+    borderLeftColor: colors.borderStrong,
+    borderLeftWidth: 2,
+    marginBottom: 8,
+    paddingLeft: 10,
+  },
+  list: {
+    marginBottom: 8,
+  },
+  listUnorderedItemIcon: {
+    color: colors.accent,
+    marginLeft: 4,
+    marginRight: 8,
+    marginTop: 1,
+  },
+  listOrderedItemIcon: {
+    color: colors.textSecondary,
+    marginLeft: 4,
+    marginRight: 8,
+    marginTop: 1,
+  },
+  listUnorderedItemText: {
+    ...typography.callout,
+    color: colors.text,
+  },
+  listOrderedItemText: {
+    ...typography.callout,
+    color: colors.text,
+  },
+  codeInline: {
+    ...typography.mono,
+    backgroundColor: '#1F232B',
+    borderRadius: 6,
+    color: colors.codeText,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  inlineCode: {
+    ...typography.mono,
+    backgroundColor: '#1F232B',
+    borderRadius: 6,
+    color: colors.codeText,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  pre: {
+    marginBottom: 8,
+  },
+  fence: {
+    ...typography.mono,
+    backgroundColor: colors.codeBg,
+    borderRadius: 8,
+    color: colors.codeText,
+    marginBottom: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  codeBlock: {
+    ...typography.mono,
+    backgroundColor: colors.codeBg,
+    borderRadius: 8,
+    color: colors.codeText,
+    marginBottom: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  hr: {
+    backgroundColor: colors.borderStrong,
+    height: 1,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  table: {
+    borderColor: colors.borderStrong,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  tableHeader: {
+    backgroundColor: colors.accentSoft,
+  },
+  tableRow: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+  },
+  tableHeaderCell: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  tableRowCell: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  image: {
+    alignSelf: 'stretch',
+    backgroundColor: colors.surfaceStrong,
+    borderColor: colors.borderStrong,
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 160,
+    marginBottom: 8,
+    width: '100%',
+  },
+  blocklink: {
+    marginBottom: 8,
+  },
+};
 
 function chatDisabledReason(phase: ConnectionPhase, statusText: string): string {
   if (phase === 'connecting') {
@@ -408,7 +584,13 @@ export function ChatScreen() {
                   >
                     {roleLabel}
                   </Text>
-                  <Text style={styles.messageText}>{item.text}</Text>
+                  {role === 'user' ? (
+                    <Text style={styles.messageText}>{item.text}</Text>
+                  ) : (
+                    <Markdown markdownit={gfmMarkdownParser} rules={markdownMessageRules} style={markdownMessageStyles}>
+                      {item.text}
+                    </Markdown>
+                  )}
                 </View>
               );
             }}

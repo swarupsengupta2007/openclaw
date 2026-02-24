@@ -25,8 +25,10 @@
     "expo-secure-store": "^15.0.8",
     "expo-status-bar": "~3.0.9",
     "lucide-react-native": "^0.575.0",
+    "markdown-it-task-lists": "^2.1.1",
     "react": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-markdown-renderer": "^4.0.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-svg": "^15.15.3"
   },

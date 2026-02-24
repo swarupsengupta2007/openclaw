@@ -11,6 +11,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
 ];
-config.resolver.disableHierarchicalLookup = true;
+// pnpm packages (e.g., markdown-it) resolve transitive deps from their own
+// virtual-store node_modules paths. Keep hierarchical lookup enabled.
+config.resolver.disableHierarchicalLookup = false;
+config.resolver.unstable_enableSymlinks = true;
 
 module.exports = config;
