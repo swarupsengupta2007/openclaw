@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   GatewaySessionManager,
@@ -107,9 +109,80 @@ const initialState: AppState = {
 };
 
 const AppStoreContext = createContext<AppStoreValue | null>(null);
+const gatewayConfigStorageKey = 'openclaw.mobile.gateway.config.v1';
+const gatewaySecretsStorageKey = 'openclaw.mobile.gateway.secrets.v1';
 
 function nowId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10_000)}`;
+}
+
+function parseStoredGatewayConfig(raw: string | null): Partial<GatewayConfigState> | null {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<GatewayConfigState>;
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    const next: Partial<GatewayConfigState> = {};
+
+    if (typeof parsed.host === 'string' && parsed.host.trim().length > 0) {
+      next.host = parsed.host.trim();
+    }
+
+    if (typeof parsed.port === 'string') {
+      const port = Number(parsed.port);
+      if (Number.isInteger(port) && port > 0 && port <= 65535) {
+        next.port = String(port);
+      }
+    }
+
+    if (typeof parsed.tls === 'boolean') {
+      next.tls = parsed.tls;
+    }
+
+    if (typeof parsed.token === 'string') {
+      next.token = parsed.token;
+    }
+
+    if (typeof parsed.password === 'string') {
+      next.password = parsed.password;
+    }
+
+    return Object.keys(next).length > 0 ? next : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseStoredGatewaySecrets(raw: string | null): Partial<GatewayConfigState> | null {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<GatewayConfigState>;
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    const next: Partial<GatewayConfigState> = {};
+
+    if (typeof parsed.token === 'string') {
+      next.token = parsed.token;
+    }
+
+    if (typeof parsed.password === 'string') {
+      next.password = parsed.password;
+    }
+
+    return Object.keys(next).length > 0 ? next : null;
+  } catch {
+    return null;
+  }
 }
 
 function mapHistoryMessage(raw: unknown, index: number): ChatMessage | null {
@@ -178,10 +251,97 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(initialState);
   const stateRef = useRef(state);
   const instanceIdRef = useRef(`rn-${Math.floor(Math.random() * 100_000_000)}`);
+  const gatewayConfigHydratedRef = useRef(false);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void Promise.all([
+      AsyncStorage.getItem(gatewayConfigStorageKey),
+      SecureStore.getItemAsync(gatewaySecretsStorageKey),
+    ])
+      .then(([configRaw, secretsRaw]) => {
+        if (cancelled) {
+          return;
+        }
+
+        const storedConfig = parseStoredGatewayConfig(configRaw);
+        const storedSecrets = parseStoredGatewaySecrets(secretsRaw);
+        if (!storedConfig && !storedSecrets) {
+          return;
+        }
+
+        setState((prev) => {
+          const next: AppState = {
+            ...prev,
+            gatewayConfig: {
+              ...prev.gatewayConfig,
+              ...storedConfig,
+              ...storedSecrets,
+            },
+          };
+          stateRef.current = next;
+          return next;
+        });
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Failed to restore gateway config', error);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          gatewayConfigHydratedRef.current = true;
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!gatewayConfigHydratedRef.current) {
+      return;
+    }
+
+    const payload: GatewayConfigState = {
+      ...state.gatewayConfig,
+      token: '',
+      password: '',
+      setupCode: '',
+    };
+
+    void AsyncStorage.setItem(gatewayConfigStorageKey, JSON.stringify(payload)).catch((error) => {
+      console.error('Failed to persist gateway config', error);
+    });
+
+    const secrets = {
+      token: state.gatewayConfig.token,
+      password: state.gatewayConfig.password,
+    };
+
+    if (!secrets.token && !secrets.password) {
+      void SecureStore.deleteItemAsync(gatewaySecretsStorageKey).catch((error) => {
+        console.error('Failed to clear gateway secrets', error);
+      });
+      return;
+    }
+
+    void SecureStore.setItemAsync(gatewaySecretsStorageKey, JSON.stringify(secrets)).catch((error) => {
+      console.error('Failed to persist gateway secrets', error);
+    });
+  }, [
+    state.gatewayConfig.host,
+    state.gatewayConfig.port,
+    state.gatewayConfig.tls,
+    state.gatewayConfig.token,
+    state.gatewayConfig.password,
+  ]);
 
   const managerRef = useRef<GatewaySessionManager | null>(null);
 
