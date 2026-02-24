@@ -17,7 +17,6 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
   const pairingRequestId = state.phase === 'pairing_required' ? extractRequestId(state.statusText) : null;
   const isConnected = state.phase === 'connected' || state.phase === 'connecting';
   const actionLabel = isConnected ? 'Disconnect Gateway' : 'Connect Gateway';
-  const actionHint = isConnected ? 'End active session cleanly' : 'Start secure session';
 
   const endpoint = useMemo(() => {
     const scheme = state.gatewayConfig.tls ? 'wss' : 'ws';
@@ -32,9 +31,9 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
         <View style={styles.hero}>
           <Text style={styles.heroKicker}>Connection Control</Text>
 
-          <Text style={styles.heroTitle}>Gateway{'\n'}Command Deck</Text>
+          <Text style={styles.heroTitle}>Gateway Connection</Text>
           <Text style={styles.heroSubtitle}>
-            One clear action. Live state context. Advanced controls only when you ask for them.
+            One clear action. Open advanced controls only when needed.
           </Text>
 
           <View style={styles.endpointRow}>
@@ -53,6 +52,7 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
         {state.phase === 'pairing_required' ? (
           <View style={styles.pairingGuide}>
             <Text style={styles.pairingTitle}>Approve this device on gateway host</Text>
+            <Text style={styles.pairingHint}>Run these commands:</Text>
             <CodeBlock value="openclaw devices list" />
             <CodeBlock
               value={pairingRequestId ? `openclaw devices approve ${pairingRequestId}` : 'openclaw devices approve'}
@@ -62,12 +62,13 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
 
         <Pressable
           onPress={isConnected ? actions.disconnect : () => void actions.connect()}
-          style={({ pressed }) => [styles.primaryActionShell, pressed ? styles.primaryActionPressed : undefined]}
+          style={({ pressed }) => [
+            styles.primaryAction,
+            isConnected ? styles.primaryActionDanger : styles.primaryActionDefault,
+            pressed ? styles.primaryActionPressed : undefined,
+          ]}
         >
-          <View style={[styles.primaryAction, isConnected ? styles.primaryActionDanger : styles.primaryActionDefault]}>
-            <Text style={styles.primaryActionLabel}>{actionLabel}</Text>
-            <Text style={styles.primaryActionHint}>{actionHint}</Text>
-          </View>
+          <Text style={styles.primaryActionLabel}>{actionLabel}</Text>
         </Pressable>
 
         <Pressable
@@ -76,7 +77,7 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
         >
           <View style={styles.advancedHeaderCopy}>
             <Text style={styles.advancedTitle}>Advanced controls</Text>
-            <Text style={styles.advancedSubtitle}>Setup code, endpoint overrides, TLS, token, password.</Text>
+            <Text style={styles.advancedSubtitle}>Setup code, endpoint, TLS, token, password, onboarding.</Text>
           </View>
           {advancedOpen ? (
             <ChevronUp size={18} color={colors.textSecondary} />
@@ -94,7 +95,7 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
                   onPress={actions.applySetupCode}
                   style={({ pressed }) => [styles.inlineAction, pressed ? styles.inlineActionPressed : undefined]}
                 >
-                  <Text style={styles.inlineActionText}>Apply</Text>
+                  <Text style={styles.inlineActionText}>Apply code</Text>
                 </Pressable>
               </View>
               <Input
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
   heroTitle: {
     ...typography.title1,
     color: colors.text,
-    lineHeight: 32,
+    lineHeight: 31,
   },
   heroSubtitle: {
     ...typography.body,
@@ -251,49 +252,45 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   pairingGuide: {
+    borderLeftColor: colors.accent,
+    borderLeftWidth: 2,
     gap: 8,
+    paddingLeft: 12,
   },
   pairingTitle: {
-    ...typography.caption1,
-    color: colors.textSecondary,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
+    ...typography.headline,
+    color: colors.text,
   },
-  primaryActionShell: {
-    borderRadius: 18,
-    ...shadows.md,
+  pairingHint: {
+    ...typography.callout,
+    color: colors.textSecondary,
   },
   primaryAction: {
     alignItems: 'center',
-    borderColor: 'transparent',
+    ...shadows.sm,
+    borderRadius: radii.button,
     borderWidth: 1,
-    borderRadius: 18,
     justifyContent: 'center',
-    minHeight: 64,
+    minHeight: 56,
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   primaryActionDefault: {
     backgroundColor: colors.accent,
-    borderColor: '#184DAF',
+    borderColor: colors.accentEnd,
   },
   primaryActionDanger: {
     backgroundColor: colors.danger,
-    borderColor: '#B94444',
+    borderColor: colors.dangerEnd,
   },
   primaryActionPressed: {
     opacity: 0.92,
-    transform: [{ scale: 0.992 }],
+    transform: [{ scale: 0.985 }],
   },
   primaryActionLabel: {
     ...typography.title3,
     color: '#FFFFFF',
-  },
-  primaryActionHint: {
-    ...typography.caption1,
-    color: '#DEE9FF',
-    letterSpacing: 0.25,
-    marginTop: 2,
+    fontWeight: '700',
   },
   advancedToggle: {
     alignItems: 'center',
@@ -318,11 +315,12 @@ const styles = StyleSheet.create({
   advancedSubtitle: {
     ...typography.callout,
     color: colors.textSecondary,
+    lineHeight: 19,
   },
   advancedPanel: {
     borderTopColor: colors.border,
     borderTopWidth: StyleSheet.hairlineWidth,
-    gap: 14,
+    gap: 12,
     paddingTop: 14,
   },
   section: {
@@ -334,7 +332,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sectionTitle: {
-    ...typography.title3,
+    ...typography.headline,
     color: colors.text,
   },
   sectionHint: {
@@ -349,14 +347,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     borderColor: colors.borderStrong,
-    borderRadius: radii.pill,
+    borderRadius: 10,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 30,
+    minHeight: 34,
     paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   inlineActionPressed: {
-    opacity: 0.72,
+    opacity: 0.82,
   },
   inlineActionText: {
     ...typography.caption1,
