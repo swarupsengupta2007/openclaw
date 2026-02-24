@@ -16,8 +16,10 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
   const { state, actions } = useAppStore();
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const pairingRequestId = state.phase === 'pairing_required' ? extractRequestId(state.statusText) : null;
-  const isConnected = state.phase === 'connected' || state.phase === 'connecting';
-  const actionLabel = isConnected ? 'Disconnect Gateway' : 'Connect Gateway';
+  const isConnecting = state.phase === 'connecting';
+  const isConnected = state.phase === 'connected';
+  const actionLabel = isConnecting ? 'Connecting…' : isConnected ? 'Disconnect Gateway' : 'Connect Gateway';
+  const primaryDisabled = isConnecting;
 
   const applySetupCodeInput = useCallback((setupCode: string) => {
     actions.setGatewayConfig({ setupCode });
@@ -29,6 +31,11 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
     }
     actions.applySetupCode();
   }, [actions]);
+
+  const setupCodeInvalid = useMemo(() => {
+    const value = state.gatewayConfig.setupCode.trim();
+    return value.length > 0 && !decodeSetupCode(value);
+  }, [state.gatewayConfig.setupCode]);
 
   const endpoint = useMemo(() => {
     const scheme = state.gatewayConfig.tls ? 'wss' : 'ws';
@@ -73,11 +80,13 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
         ) : null}
 
         <Pressable
+          disabled={primaryDisabled}
           onPress={isConnected ? actions.disconnect : () => void actions.connect()}
           style={({ pressed }) => [
             styles.primaryAction,
             isConnected ? styles.primaryActionDanger : styles.primaryActionDefault,
-            pressed ? styles.primaryActionPressed : undefined,
+            primaryDisabled ? styles.primaryActionDisabled : undefined,
+            pressed && !primaryDisabled ? styles.primaryActionPressed : undefined,
           ]}
         >
           <Text style={styles.primaryActionLabel}>{actionLabel}</Text>
@@ -112,6 +121,9 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
                 textAlignVertical="top"
                 style={styles.setupInput}
               />
+              {setupCodeInvalid ? (
+                <Text style={styles.setupCodeValidation}>Setup code format is invalid.</Text>
+              ) : null}
             </View>
 
             <View style={styles.divider} />
@@ -295,6 +307,9 @@ const styles = StyleSheet.create({
     opacity: 0.92,
     transform: [{ scale: 0.985 }],
   },
+  primaryActionDisabled: {
+    opacity: 0.55,
+  },
   primaryActionLabel: {
     ...typography.title3,
     color: '#FFFFFF',
@@ -345,6 +360,10 @@ const styles = StyleSheet.create({
   setupInput: {
     minHeight: 90,
     paddingTop: 14,
+  },
+  setupCodeValidation: {
+    ...typography.caption1,
+    color: colors.warning,
   },
   secondaryWideAction: {
     alignItems: 'center',
