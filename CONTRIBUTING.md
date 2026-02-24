@@ -47,6 +47,9 @@ Welcome to the lobster tank! 🦞
 - **Onur Solmaz** - Agents, dev workflows, ACP integrations, MS Teams
   - GitHub: [@onutc](https://github.com/onutc), [@osolmaz](https://github.com/osolmaz) · X: [@onusoz](https://x.com/onusoz)
 
+- **Val Alexander** - UI/UX, Docs, and Agent DevX
+  - GitHub: [@BunsDev](https://github.com/BunsDev) · X: [@BunsDev](https://x.com/BunsDev)
+
 ## How to Contribute
 
 1. **Bugs & small fixes** → Open a PR!
