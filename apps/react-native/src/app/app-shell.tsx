@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Link, MessageSquare, Mic, Monitor, Settings } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatScreen } from '../features/chat/chat-screen';
 import { ConnectScreen } from '../features/connect/connect-screen';
@@ -10,7 +10,7 @@ import { SettingsScreen } from '../features/settings/settings-screen';
 import { VoiceScreen } from '../features/voice/voice-screen';
 import { OnboardingFlow } from '../features/onboarding/onboarding-flow';
 import { useAppStore } from './app-store';
-import { colors, radii, shadows, typography } from './theme';
+import { colors, radii, typography } from './theme';
 
 type TabId = 'connect' | 'chat' | 'voice' | 'screen' | 'settings';
 
@@ -31,11 +31,6 @@ const tabs: { id: TabId; label: string }[] = [
 ];
 
 const onboardingStorageKey = 'openclaw.mobile.onboarding.complete.v1';
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const TAB_BAR_HORIZONTAL_MARGIN = 12;
-const TAB_WIDTH = (SCREEN_WIDTH - TAB_BAR_HORIZONTAL_MARGIN * 2) / tabs.length;
-const INDICATOR_INSET = 6;
-const INDICATOR_WIDTH = TAB_WIDTH - INDICATOR_INSET * 2;
 
 export function AppShell() {
   const [activeTab, setActiveTab] = useState<TabId>('connect');
@@ -44,7 +39,6 @@ export function AppShell() {
   const insets = useSafeAreaInsets();
 
   const transition = useRef(new Animated.Value(1)).current;
-  const tabIndicator = useRef(new Animated.Value(0)).current;
   const statusPulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -90,17 +84,6 @@ export function AppShell() {
       useNativeDriver: true,
     }).start();
   }, [activeTab, transition]);
-
-  // Tab indicator slide
-  useEffect(() => {
-    const index = tabs.findIndex((t) => t.id === activeTab);
-    Animated.spring(tabIndicator, {
-      toValue: index * TAB_WIDTH + INDICATOR_INSET,
-      speed: 20,
-      bounciness: 6,
-      useNativeDriver: true,
-    }).start();
-  }, [activeTab, tabIndicator]);
 
   const phase = statusMeta(state.phase);
   const phaseLabel = state.phase.replace(/_/g, ' ');
@@ -160,18 +143,20 @@ export function AppShell() {
       </Animated.View>
 
       <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-        <Animated.View
-          style={[
-            styles.tabIndicator,
-            { transform: [{ translateX: tabIndicator }] },
-          ]}
-        />
         {tabs.map((tab) => {
           const active = tab.id === activeTab;
           const Icon = tabIcons[tab.id];
           const iconColor = active ? colors.accent : colors.textTertiary;
           return (
-            <Pressable key={tab.id} onPress={() => setActiveTab(tab.id)} style={styles.tabButton}>
+            <Pressable
+              key={tab.id}
+              onPress={() => setActiveTab(tab.id)}
+              style={({ pressed }) => [
+                styles.tabButton,
+                active ? styles.tabButtonActive : undefined,
+                pressed ? styles.tabButtonPressed : undefined,
+              ]}
+            >
               <Icon size={20} color={iconColor} strokeWidth={active ? 2.4 : 1.8} />
               <Text style={active ? styles.tabLabelActive : styles.tabLabel}>{tab.label}</Text>
             </Pressable>
@@ -264,34 +249,29 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     backgroundColor: '#FFFFFF',
-    borderColor: colors.border,
-    borderRadius: 20,
-    borderWidth: 1,
+    borderTopColor: colors.border,
+    borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
-    marginHorizontal: TAB_BAR_HORIZONTAL_MARGIN,
-    marginBottom: 8,
-    paddingTop: 7,
-    paddingHorizontal: 2,
-    ...shadows.sm,
-  },
-  tabIndicator: {
-    backgroundColor: colors.accentSoft,
-    borderColor: '#D3E0FA',
-    borderRadius: 14,
-    borderWidth: 1,
-    height: 40,
-    left: 0,
-    position: 'absolute',
-    top: 5,
-    width: INDICATOR_WIDTH,
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingTop: 8,
   },
   tabButton: {
     alignItems: 'center',
+    borderRadius: 12,
     flex: 1,
     gap: 3,
     justifyContent: 'center',
-    minHeight: 48,
-    zIndex: 1,
+    minHeight: 50,
+    paddingHorizontal: 6,
+  },
+  tabButtonActive: {
+    backgroundColor: colors.accentSoft,
+    borderColor: '#D5E2FA',
+    borderWidth: 1,
+  },
+  tabButtonPressed: {
+    opacity: 0.88,
   },
   tabLabel: {
     ...typography.caption2,
