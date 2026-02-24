@@ -55,6 +55,11 @@ export function normalizeAgentLabel(agent: {
   return agent.name?.trim() || agent.identity?.name?.trim() || agent.id;
 }
 
+export function agentLogoUrl(basePath: string): string {
+  const base = basePath.trim() ? basePath.replace(/\/$/, "") : "";
+  return base ? `${base}/favicon.svg` : "/favicon.svg";
+}
+
 function isLikelyEmoji(value: string) {
   const trimmed = value.trim();
   if (!trimmed) {

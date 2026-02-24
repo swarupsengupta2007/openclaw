@@ -293,6 +293,17 @@ export function syncThemeWithSettings(host: SettingsHost) {
   syncSystemThemeListener(host);
 }
 
+export function attachThemeListener(host: SettingsHost) {
+  syncSystemThemeListener(host);
+}
+
+export function detachThemeListener(_host: SettingsHost) {
+  if (systemThemeCleanup) {
+    systemThemeCleanup();
+    systemThemeCleanup = null;
+  }
+}
+
 export function applyResolvedTheme(host: SettingsHost, resolved: ResolvedTheme) {
   host.themeResolved = resolved;
   if (typeof document === "undefined") {
