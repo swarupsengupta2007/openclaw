@@ -43,7 +43,15 @@ function chatDisabledReason(phase: ConnectionPhase, statusText: string): string 
 }
 
 function sortByTime(messages: ChatMessage[]): ChatMessage[] {
-  return messages.toSorted((a, b) => a.timestamp - b.timestamp);
+  const sorted: ChatMessage[] = [];
+  for (const message of messages) {
+    let insertAt = sorted.length;
+    while (insertAt > 0 && sorted[insertAt - 1].timestamp > message.timestamp) {
+      insertAt -= 1;
+    }
+    sorted.splice(insertAt, 0, message);
+  }
+  return sorted;
 }
 
 function shortSessionLabel(sessionKey: string): string {

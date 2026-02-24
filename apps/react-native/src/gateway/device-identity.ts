@@ -31,7 +31,15 @@ function normalizeScopes(scopes: string[]): string[] {
       out.add(trimmed);
     }
   }
-  return [...out].toSorted();
+  const sorted: string[] = [];
+  for (const scope of out) {
+    let insertAt = sorted.length;
+    while (insertAt > 0 && sorted[insertAt - 1].localeCompare(scope) > 0) {
+      insertAt -= 1;
+    }
+    sorted.splice(insertAt, 0, scope);
+  }
+  return sorted;
 }
 
 function encodeBase64Url(bytes: Uint8Array): string {
