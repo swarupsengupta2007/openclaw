@@ -58,13 +58,13 @@ export function renderOverview(props: OverviewProps) {
   const snapshot = props.hello?.snapshot as
     | {
         uptimeMs?: number;
-        policy?: { tickIntervalMs?: number };
         authMode?: "none" | "token" | "password" | "trusted-proxy";
       }
     | undefined;
   const uptime = snapshot?.uptimeMs ? formatDurationHuman(snapshot.uptimeMs) : t("common.na");
-  const tick = snapshot?.policy?.tickIntervalMs
-    ? `${(snapshot.policy.tickIntervalMs / 1000).toFixed(snapshot.policy.tickIntervalMs % 1000 === 0 ? 0 : 1)}s`
+  const tickIntervalMs = props.hello?.policy?.tickIntervalMs;
+  const tick = tickIntervalMs
+    ? `${(tickIntervalMs / 1000).toFixed(tickIntervalMs % 1000 === 0 ? 0 : 1)}s`
     : t("common.na");
   const authMode = snapshot?.authMode;
   const isTrustedProxy = authMode === "trusted-proxy";

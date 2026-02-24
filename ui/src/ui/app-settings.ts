@@ -462,6 +462,15 @@ export function hasOperatorReadAccess(
   });
 }
 
+export function hasMissingSkillDependencies(
+  missing: Record<string, unknown> | null | undefined,
+): boolean {
+  if (!missing) {
+    return false;
+  }
+  return Object.values(missing).some((value) => Array.isArray(value) && value.length > 0);
+}
+
 async function loadOverviewLogs(host: OpenClawApp) {
   if (!host.client || !host.connected) {
     return;
@@ -515,7 +524,7 @@ function buildAttentionItems(host: OpenClawApp) {
   }
 
   const skills = host.skillsReport?.skills ?? [];
-  const missingDeps = skills.filter((s) => !s.disabled && Object.keys(s.missing).length > 0);
+  const missingDeps = skills.filter((s) => !s.disabled && hasMissingSkillDependencies(s.missing));
   if (missingDeps.length > 0) {
     const names = missingDeps.slice(0, 3).map((s) => s.name);
     const more = missingDeps.length > 3 ? ` +${missingDeps.length - 3} more` : "";

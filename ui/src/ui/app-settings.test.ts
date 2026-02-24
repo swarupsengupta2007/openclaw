@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { hasOperatorReadAccess, setTabFromRoute } from "./app-settings.ts";
+import {
+  hasMissingSkillDependencies,
+  hasOperatorReadAccess,
+  setTabFromRoute,
+} from "./app-settings.ts";
 import type { Tab } from "./navigation.ts";
 
 type SettingsHost = Parameters<typeof setTabFromRoute>[0] & {
@@ -81,5 +85,41 @@ describe("hasOperatorReadAccess", () => {
     expect(hasOperatorReadAccess({ role: "operator", scopes: ["operator.pairing"] })).toBe(false);
     expect(hasOperatorReadAccess({ role: "operator" })).toBe(false);
     expect(hasOperatorReadAccess(null)).toBe(false);
+  });
+});
+
+describe("hasMissingSkillDependencies", () => {
+  it("returns false when all requirement buckets are empty", () => {
+    expect(
+      hasMissingSkillDependencies({
+        bins: [],
+        anyBins: [],
+        env: [],
+        config: [],
+        os: [],
+      }),
+    ).toBe(false);
+  });
+
+  it("returns true when any requirement bucket has entries", () => {
+    expect(
+      hasMissingSkillDependencies({
+        bins: ["op"],
+        anyBins: [],
+        env: [],
+        config: [],
+        os: [],
+      }),
+    ).toBe(true);
+
+    expect(
+      hasMissingSkillDependencies({
+        bins: [],
+        anyBins: ["op", "gopass"],
+        env: [],
+        config: [],
+        os: [],
+      }),
+    ).toBe(true);
   });
 });

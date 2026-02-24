@@ -95,7 +95,7 @@
   border: none;
   border-radius: var(--radius-sm);
   background: linear-gradient(135deg, var(--kn-claw), var(--kn-claw-deep));
-  color: #fff;
+  color: var(--accent-foreground);
   font-weight: 600;
   font-size: 0.88rem;
   cursor: pointer;

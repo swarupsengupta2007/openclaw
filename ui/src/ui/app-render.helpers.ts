@@ -410,8 +410,8 @@ const THEME_OPTIONS: ThemeOption[] = [
 type ThemeModeOption = { id: ThemeMode; label: string; short: string };
 const THEME_MODE_OPTIONS: ThemeModeOption[] = [
   { id: "system", label: "System", short: "SYS" },
-  { id: "dark", label: "Dark", short: "DARK" },
   { id: "light", label: "Light", short: "LIGHT" },
+  { id: "dark", label: "Dark", short: "DARK" },
 ];
 
 function currentThemeIcon(theme: ThemeName): string {
@@ -457,6 +457,18 @@ export function renderTopbarThemeModeToggle(state: AppViewState) {
 }
 
 export function renderThemeToggle(state: AppViewState) {
+  const setOpen = (orb: HTMLElement, nextOpen: boolean) => {
+    orb.classList.toggle("theme-orb--open", nextOpen);
+    const trigger = orb.querySelector<HTMLButtonElement>(".theme-orb__trigger");
+    const menu = orb.querySelector<HTMLElement>(".theme-orb__menu");
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+    }
+    if (menu) {
+      menu.setAttribute("aria-hidden", nextOpen ? "false" : "true");
+    }
+  };
+
   const toggleOpen = (e: Event) => {
     const orb = (e.currentTarget as HTMLElement).closest<HTMLElement>(".theme-orb");
     if (!orb) {
@@ -464,12 +476,12 @@ export function renderThemeToggle(state: AppViewState) {
     }
     const isOpen = orb.classList.contains("theme-orb--open");
     if (isOpen) {
-      orb.classList.remove("theme-orb--open");
+      setOpen(orb, false);
     } else {
-      orb.classList.add("theme-orb--open");
+      setOpen(orb, true);
       const close = (ev: MouseEvent) => {
         if (!orb.contains(ev.target as Node)) {
-          orb.classList.remove("theme-orb--open");
+          setOpen(orb, false);
           document.removeEventListener("click", close);
         }
       };
@@ -479,7 +491,9 @@ export function renderThemeToggle(state: AppViewState) {
 
   const pick = (opt: ThemeOption, e: Event) => {
     const orb = (e.currentTarget as HTMLElement).closest<HTMLElement>(".theme-orb");
-    orb?.classList.remove("theme-orb--open");
+    if (orb) {
+      setOpen(orb, false);
+    }
     if (opt.id !== state.theme) {
       const context: ThemeTransitionContext = { element: orb ?? undefined };
       state.setTheme(opt.id, context);
@@ -489,112 +503,27 @@ export function renderThemeToggle(state: AppViewState) {
   return html`
     <div class="theme-orb" aria-label="Theme">
       <button
+        type="button"
         class="theme-orb__trigger"
         title="Theme"
+        aria-haspopup="menu"
+        aria-expanded="false"
         @click=${toggleOpen}
       >${currentThemeIcon(state.theme)}</button>
-      <div class="theme-orb__menu">
+      <div class="theme-orb__menu" role="menu" aria-hidden="true">
         ${THEME_OPTIONS.map(
           (opt) => html`
             <button
+              type="button"
               class="theme-orb__option ${opt.id === state.theme ? "theme-orb__option--active" : ""}"
               title=${opt.label}
+              role="menuitemradio"
+              aria-checked=${opt.id === state.theme}
+              aria-label=${opt.label}
               @click=${(e: Event) => pick(opt, e)}
             >${opt.icon}</button>`,
         )}
       </div>
-    </div>
-  `;
-}
-
-/* ── Sidebar Theme Selector ── */
-
-export function renderSidebarThemeSelector(state: AppViewState) {
-  const isCollapsed = state.settings.navCollapsed;
-  const currentTheme = THEME_OPTIONS.find((opt) => opt.id === state.theme) ?? THEME_OPTIONS[0];
-
-  const applyTheme = (theme: ThemeName, e: Event) => {
-    if (theme === state.theme) {
-      return;
-    }
-    const element = e.currentTarget as HTMLElement;
-    state.setTheme(theme, { element });
-  };
-
-  const renderThemeSegmented = (opts?: { onPick?: (e: Event) => void }) => html`
-    <div class="theme-selector__segmented" role="group" aria-label="Theme">
-      ${THEME_OPTIONS.map(
-        (opt) => html`
-          <button
-            class="theme-selector__seg-btn ${opt.id === state.theme ? "theme-selector__seg-btn--active" : ""}"
-            title=${opt.label}
-            aria-label="${t("common.theme")}: ${opt.label}"
-            aria-pressed=${opt.id === state.theme}
-            @click=${(e: Event) => {
-              applyTheme(opt.id, e);
-              opts?.onPick?.(e);
-            }}
-          >
-            ${opt.label}
-          </button>
-        `,
-      )}
-    </div>
-  `;
-
-  if (isCollapsed) {
-    const toggleOpen = (e: Event) => {
-      const selector = (e.currentTarget as HTMLElement).closest(".theme-selector");
-      if (!selector) {
-        return;
-      }
-      const isOpen = selector.classList.contains("theme-selector--open");
-      if (isOpen) {
-        selector.classList.remove("theme-selector--open");
-      } else {
-        selector.classList.add("theme-selector--open");
-        const close = (ev: MouseEvent) => {
-          if (!selector.contains(ev.target as Node)) {
-            selector.classList.remove("theme-selector--open");
-            document.removeEventListener("click", close);
-          }
-        };
-        requestAnimationFrame(() => document.addEventListener("click", close));
-      }
-    };
-
-    return html`
-      <div class="theme-selector theme-selector--collapsed">
-        <button
-          class="theme-selector__trigger"
-          title="${t("common.theme")}: ${currentTheme.label}"
-          aria-label="${t("common.theme")}: ${currentTheme.label}"
-          @click=${toggleOpen}
-        >
-          <span>${currentTheme.label.slice(0, 1)}</span>
-        </button>
-        <div class="theme-selector__popover">
-          <div class="theme-selector__group">
-            <div class="theme-selector__label">Theme</div>
-            ${renderThemeSegmented({
-              onPick: (e: Event) => {
-                const sel = (e.currentTarget as HTMLElement).closest(".theme-selector");
-                sel?.classList.remove("theme-selector--open");
-              },
-            })}
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  return html`
-    <div class="theme-selector">
-      <div class="theme-selector__group">
-        <div class="theme-selector__label">Theme</div>
-        ${renderThemeSegmented()}
-      </div>
-      <span class="theme-selector__current">${currentTheme.label}</span>
     </div>
   `;
 }

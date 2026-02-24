@@ -545,8 +545,8 @@ function renderAppearanceSection(props: ConfigProps) {
     icon: TemplateResult;
   }> = [
     { id: "system", label: "System", description: "Follow OS light or dark", icon: icons.monitor },
-    { id: "dark", label: "Dark", description: "Force dark mode", icon: icons.moon },
     { id: "light", label: "Light", description: "Force light mode", icon: icons.sun },
+    { id: "dark", label: "Dark", description: "Force dark mode", icon: icons.moon },
   ];
 
   return html`

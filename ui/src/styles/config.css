@@ -312,7 +312,7 @@
 
 .config-mode-toggle__btn.active {
   background: var(--accent);
-  color: white;
+  color: var(--accent-foreground);
   box-shadow: var(--shadow-sm);
 }
 
@@ -1011,7 +1011,7 @@
 
 .cfg-segmented__btn.active {
   background: var(--accent);
-  color: white;
+  color: var(--accent-foreground);
   box-shadow: var(--shadow-sm);
 }
 

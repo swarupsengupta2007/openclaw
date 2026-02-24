@@ -435,6 +435,16 @@ export class OpenClawApp extends LitElement {
   private popStateHandler = () =>
     onPopStateInternal(this as unknown as Parameters<typeof onPopStateInternal>[0]);
   private topbarObserver: ResizeObserver | null = null;
+  private globalKeydownHandler = (e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === "k") {
+      e.preventDefault();
+      this.paletteOpen = !this.paletteOpen;
+      if (this.paletteOpen) {
+        this.paletteQuery = "";
+        this.paletteActiveIndex = 0;
+      }
+    }
+  };
 
   createRenderRoot() {
     return this;
@@ -455,6 +465,7 @@ export class OpenClawApp extends LitElement {
           break;
       }
     };
+    document.addEventListener("keydown", this.globalKeydownHandler);
     handleConnected(this as unknown as Parameters<typeof handleConnected>[0]);
   }
 
@@ -463,6 +474,7 @@ export class OpenClawApp extends LitElement {
   }
 
   disconnectedCallback() {
+    document.removeEventListener("keydown", this.globalKeydownHandler);
     handleDisconnected(this as unknown as Parameters<typeof handleDisconnected>[0]);
     super.disconnectedCallback();
   }

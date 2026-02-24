@@ -9,7 +9,6 @@ import { renderUsageTab } from "./app-render-usage-tab.ts";
 import {
   renderChatControls,
   renderChatSessionSelect,
-  renderSidebarThemeSelector,
   renderTab,
   renderTopbarThemeModeToggle,
 } from "./app-render.helpers.ts";
@@ -356,7 +355,6 @@ export function renderApp(state: AppViewState) {
         </nav>
 
         <div class="sidebar-footer">
-          ${renderSidebarThemeSelector(state)}
           <div class="sidebar-footer__docs-block">
             <a
               class="nav-item nav-item--external"
@@ -376,10 +374,7 @@ export function renderApp(state: AppViewState) {
               }
             </a>
             ${(() => {
-              const snapshot = state.hello?.snapshot as
-                | { server?: { version?: string } }
-                | undefined;
-              const version = snapshot?.server?.version ?? "";
+              const version = state.hello?.server?.version ?? "";
               return version
                 ? html`
                   <div class="sidebar-version" title=${`v${version}`}>
@@ -1310,9 +1305,7 @@ export function renderApp(state: AppViewState) {
                 onSave: () => saveConfig(state),
                 onApply: () => applyConfig(state),
                 onUpdate: () => runUpdate(state),
-                version:
-                  (state.hello?.snapshot as { server?: { version?: string } } | undefined)?.server
-                    ?.version ?? "",
+                version: state.hello?.server?.version ?? "",
                 theme: state.theme,
                 themeMode: state.themeMode,
                 setTheme: (t, ctx) => state.setTheme(t, ctx),
@@ -1381,9 +1374,7 @@ export function renderApp(state: AppViewState) {
                 onSave: () => saveConfig(state),
                 onApply: () => applyConfig(state),
                 onUpdate: () => runUpdate(state),
-                version:
-                  (state.hello?.snapshot as { server?: { version?: string } } | undefined)?.server
-                    ?.version ?? "",
+                version: state.hello?.server?.version ?? "",
                 theme: state.theme,
                 themeMode: state.themeMode,
                 setTheme: (t, ctx) => state.setTheme(t, ctx),
@@ -1446,9 +1437,7 @@ export function renderApp(state: AppViewState) {
                 onSave: () => saveConfig(state),
                 onApply: () => applyConfig(state),
                 onUpdate: () => runUpdate(state),
-                version:
-                  (state.hello?.snapshot as { server?: { version?: string } } | undefined)?.server
-                    ?.version ?? "",
+                version: state.hello?.server?.version ?? "",
                 theme: state.theme,
                 themeMode: state.themeMode,
                 setTheme: (t, ctx) => state.setTheme(t, ctx),
@@ -1511,9 +1500,7 @@ export function renderApp(state: AppViewState) {
                 onSave: () => saveConfig(state),
                 onApply: () => applyConfig(state),
                 onUpdate: () => runUpdate(state),
-                version:
-                  (state.hello?.snapshot as { server?: { version?: string } } | undefined)?.server
-                    ?.version ?? "",
+                version: state.hello?.server?.version ?? "",
                 theme: state.theme,
                 themeMode: state.themeMode,
                 setTheme: (t, ctx) => state.setTheme(t, ctx),
@@ -1576,9 +1563,7 @@ export function renderApp(state: AppViewState) {
                 onSave: () => saveConfig(state),
                 onApply: () => applyConfig(state),
                 onUpdate: () => runUpdate(state),
-                version:
-                  (state.hello?.snapshot as { server?: { version?: string } } | undefined)?.server
-                    ?.version ?? "",
+                version: state.hello?.server?.version ?? "",
                 theme: state.theme,
                 themeMode: state.themeMode,
                 setTheme: (t, ctx) => state.setTheme(t, ctx),
@@ -1641,9 +1626,7 @@ export function renderApp(state: AppViewState) {
                 onSave: () => saveConfig(state),
                 onApply: () => applyConfig(state),
                 onUpdate: () => runUpdate(state),
-                version:
-                  (state.hello?.snapshot as { server?: { version?: string } } | undefined)?.server
-                    ?.version ?? "",
+                version: state.hello?.server?.version ?? "",
                 theme: state.theme,
                 themeMode: state.themeMode,
                 setTheme: (t, ctx) => state.setTheme(t, ctx),

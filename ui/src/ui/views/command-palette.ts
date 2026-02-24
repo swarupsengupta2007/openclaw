@@ -169,12 +169,12 @@ function handleKeydown(e: KeyboardEvent, props: CommandPaletteProps) {
   switch (e.key) {
     case "ArrowDown":
       e.preventDefault();
-      props.onActiveIndexChange(Math.min(props.activeIndex + 1, items.length - 1));
+      props.onActiveIndexChange((props.activeIndex + 1) % items.length);
       scrollActiveIntoView();
       break;
     case "ArrowUp":
       e.preventDefault();
-      props.onActiveIndexChange(Math.max(props.activeIndex - 1, 0));
+      props.onActiveIndexChange((props.activeIndex - 1 + items.length) % items.length);
       scrollActiveIntoView();
       break;
     case "Enter":

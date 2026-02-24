@@ -461,6 +461,7 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
 
   opacity: 0;
+  visibility: hidden;
   transform: scale(0.4) translateY(-8px);
   transform-origin: top right;
   pointer-events: none;
@@ -471,6 +472,7 @@
 
 .theme-orb--open .theme-orb__menu {
   opacity: 1;
+  visibility: visible;
   transform: scale(1) translateY(0);
   pointer-events: auto;
 }
@@ -563,7 +565,7 @@
 
 .topbar-theme-mode__btn--active {
   background: var(--accent);
-  color: #fff;
+  color: var(--primary-foreground);
   box-shadow: var(--shadow-sm);
 }
 
@@ -625,7 +627,7 @@
 
 .theme-selector__seg-btn--active {
   background: var(--accent);
-  color: #fff;
+  color: var(--primary-foreground);
   box-shadow: var(--shadow-sm);
 }
 
@@ -700,6 +702,7 @@
   border: 1px solid var(--clay-border-color);
   box-shadow: var(--glass-shadow-md);
   opacity: 0;
+  visibility: hidden;
   transform: scale(0.9) translateX(-4px);
   transform-origin: left bottom;
   pointer-events: none;
@@ -711,6 +714,7 @@
 
 .theme-selector--open .theme-selector__popover {
   opacity: 1;
+  visibility: visible;
   transform: scale(1) translateX(0);
   pointer-events: auto;
 }
@@ -2850,7 +2854,7 @@
 .agent-tab.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--accent-foreground);
 }
 
 .agent-tab-count {
