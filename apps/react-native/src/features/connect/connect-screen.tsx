@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronDown, ChevronUp } from 'lucide-react-native';
-import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Check, ChevronDown, ChevronUp } from 'lucide-react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useAppStore } from '../../app/app-store';
 import { decodeSetupCode } from '../../gateway/setup-code';
 import { colors, gradients, radii, shadows, typography } from '../../app/theme';
@@ -12,14 +12,163 @@ function extractRequestId(text: string): string | null {
   return match?.[1] ?? null;
 }
 
+type ConnectButtonVisualState = 'connect' | 'connecting' | 'success' | 'disconnect';
+
+const minimumConnectingVisualMs = 520;
+
 export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => Promise<void> }) {
   const { state, actions } = useAppStore();
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [buttonVisualState, setButtonVisualState] = useState<ConnectButtonVisualState>(
+    state.phase === 'connected' ? 'disconnect' : state.phase === 'connecting' ? 'connecting' : 'connect',
+  );
+  const previousPhaseRef = useRef(state.phase);
+  const successCoreOpacity = useRef(new Animated.Value(0)).current;
+  const successCoreScale = useRef(new Animated.Value(0.75)).current;
+  const successRingOpacity = useRef(new Animated.Value(0)).current;
+  const successRingScale = useRef(new Animated.Value(0.68)).current;
+  const successAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const successStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectPressTimeRef = useRef<number | null>(null);
+  const phaseRef = useRef(state.phase);
+
   const pairingRequestId = state.phase === 'pairing_required' ? extractRequestId(state.statusText) : null;
-  const isConnecting = state.phase === 'connecting';
-  const isConnected = state.phase === 'connected';
-  const actionLabel = isConnecting ? 'Connecting…' : isConnected ? 'Disconnect Gateway' : 'Connect Gateway';
-  const primaryDisabled = isConnecting;
+  const showFlourish = buttonVisualState === 'success';
+  const actionLabel =
+    buttonVisualState === 'connecting'
+      ? 'Connecting…'
+      : buttonVisualState === 'success'
+        ? 'Connected'
+        : buttonVisualState === 'disconnect'
+          ? 'Disconnect Gateway'
+          : 'Connect Gateway';
+  const primaryDisabled = buttonVisualState === 'connecting' || buttonVisualState === 'success';
+
+  useEffect(() => {
+    phaseRef.current = state.phase;
+  }, [state.phase]);
+
+  const runSuccessFlourish = useCallback(() => {
+    successAnimationRef.current?.stop();
+    successAnimationRef.current = null;
+
+    successCoreOpacity.setValue(0);
+    successCoreScale.setValue(0.75);
+    successRingOpacity.setValue(0);
+    successRingScale.setValue(0.68);
+    setButtonVisualState('success');
+
+    const flourish = Animated.sequence([
+      Animated.delay(90),
+      Animated.parallel([
+        Animated.timing(successCoreOpacity, {
+          toValue: 1,
+          duration: 130,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.spring(successCoreScale, {
+          toValue: 1,
+          speed: 18,
+          bounciness: 9,
+          useNativeDriver: true,
+        }),
+        Animated.timing(successRingOpacity, {
+          toValue: 0.55,
+          duration: 150,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(successRingScale, {
+          toValue: 1.26,
+          duration: 420,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.delay(340),
+      Animated.parallel([
+        Animated.timing(successCoreOpacity, {
+          toValue: 0,
+          duration: 180,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(successRingOpacity, {
+          toValue: 0,
+          duration: 220,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(successRingScale, {
+          toValue: 1.36,
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]);
+    successAnimationRef.current = flourish;
+    flourish.start(({ finished }) => {
+      successAnimationRef.current = null;
+      connectPressTimeRef.current = null;
+      if (finished && phaseRef.current === 'connected') {
+        setButtonVisualState('disconnect');
+        return;
+      }
+      setButtonVisualState('connect');
+    });
+  }, [successCoreOpacity, successCoreScale, successRingOpacity, successRingScale]);
+
+  useEffect(() => {
+    return () => {
+      if (successStartTimerRef.current) {
+        clearTimeout(successStartTimerRef.current);
+        successStartTimerRef.current = null;
+      }
+      successAnimationRef.current?.stop();
+      successAnimationRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const previousPhase = previousPhaseRef.current;
+    previousPhaseRef.current = state.phase;
+    if (state.phase === 'connecting') {
+      setButtonVisualState('connecting');
+      return;
+    }
+
+    if (state.phase === 'connected') {
+      if (previousPhase !== 'connecting' || connectPressTimeRef.current === null) {
+        setButtonVisualState('disconnect');
+        return;
+      }
+
+      if (successStartTimerRef.current) {
+        clearTimeout(successStartTimerRef.current);
+        successStartTimerRef.current = null;
+      }
+
+      const elapsed = Date.now() - connectPressTimeRef.current;
+      const delay = Math.max(0, minimumConnectingVisualMs - elapsed);
+      setButtonVisualState('connecting');
+      successStartTimerRef.current = setTimeout(() => {
+        successStartTimerRef.current = null;
+        runSuccessFlourish();
+      }, delay);
+      return;
+    }
+
+    if (successStartTimerRef.current) {
+      clearTimeout(successStartTimerRef.current);
+      successStartTimerRef.current = null;
+    }
+    successAnimationRef.current?.stop();
+    successAnimationRef.current = null;
+    connectPressTimeRef.current = null;
+    setButtonVisualState('connect');
+  }, [state.phase, runSuccessFlourish]);
 
   const applySetupCodeInput = useCallback((setupCode: string) => {
     actions.setGatewayConfig({ setupCode });
@@ -81,15 +230,46 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
 
         <Pressable
           disabled={primaryDisabled}
-          onPress={isConnected ? actions.disconnect : () => void actions.connect()}
+          onPress={() => {
+            if (buttonVisualState === 'disconnect') {
+              actions.disconnect();
+              return;
+            }
+            connectPressTimeRef.current = Date.now();
+            setButtonVisualState('connecting');
+            void actions.connect();
+          }}
           style={({ pressed }) => [
             styles.primaryAction,
-            isConnected ? styles.primaryActionDanger : styles.primaryActionDefault,
+            buttonVisualState === 'disconnect' ? styles.primaryActionDanger : styles.primaryActionDefault,
             primaryDisabled ? styles.primaryActionDisabled : undefined,
             pressed && !primaryDisabled ? styles.primaryActionPressed : undefined,
           ]}
         >
-          <Text style={styles.primaryActionLabel}>{actionLabel}</Text>
+          <View style={styles.primaryActionContent}>
+            <View style={styles.primaryActionFlourishSlot}>
+              {showFlourish ? (
+                <View style={styles.primaryActionFlourishRoot} pointerEvents="none">
+                  <Animated.View
+                    style={[
+                      styles.primaryActionFlourishRing,
+                      { opacity: successRingOpacity, transform: [{ scale: successRingScale }] },
+                    ]}
+                  />
+                  <Animated.View
+                    style={[
+                      styles.primaryActionFlourishCore,
+                      { opacity: successCoreOpacity, transform: [{ scale: successCoreScale }] },
+                    ]}
+                  >
+                    <Check size={12} color="#FFFFFF" strokeWidth={2.8} />
+                  </Animated.View>
+                </View>
+              ) : null}
+            </View>
+            <Text style={styles.primaryActionLabel}>{actionLabel}</Text>
+            <View style={styles.primaryActionFlourishSlot} />
+          </View>
         </Pressable>
 
         <Pressable
@@ -304,11 +484,41 @@ const styles = StyleSheet.create({
     borderColor: colors.dangerEnd,
   },
   primaryActionPressed: {
-    opacity: 0.92,
     transform: [{ scale: 0.985 }],
   },
-  primaryActionDisabled: {
-    opacity: 0.55,
+  primaryActionDisabled: {},
+  primaryActionContent: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  primaryActionFlourishSlot: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 22,
+  },
+  primaryActionFlourishRoot: {
+    alignItems: 'center',
+    height: 22,
+    justifyContent: 'center',
+    width: 22,
+  },
+  primaryActionFlourishRing: {
+    borderColor: 'rgba(255,255,255,0.45)',
+    borderRadius: 11,
+    borderWidth: 1.25,
+    height: 22,
+    position: 'absolute',
+    width: 22,
+  },
+  primaryActionFlourishCore: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 10,
+    height: 20,
+    justifyContent: 'center',
+    width: 20,
   },
   primaryActionLabel: {
     ...typography.title3,
