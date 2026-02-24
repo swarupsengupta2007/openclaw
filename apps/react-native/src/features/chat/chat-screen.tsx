@@ -111,6 +111,14 @@ export function ChatScreen() {
     ];
   }, [state.chatStream, visibleMessages]);
 
+  const invertedThreadItems = useMemo<ThreadItem[]>(() => {
+    const reversed: ThreadItem[] = [];
+    for (let index = threadItems.length - 1; index >= 0; index -= 1) {
+      reversed.push(threadItems[index]);
+    }
+    return reversed;
+  }, [threadItems]);
+
   const sendDisabled = !connected || state.chatSending || Boolean(state.chatRunId) || draft.trim().length === 0;
   const sendBusy = connected && Boolean(state.chatSending || state.chatRunId);
   const sessionCommandDisabled = !connected || state.chatSending || Boolean(state.chatRunId);
@@ -119,21 +127,25 @@ export function ChatScreen() {
   const inputDisabled = !connected || state.chatSending;
 
   const scrollToBottom = useCallback((animated: boolean) => {
-    listRef.current?.scrollToEnd({ animated });
+    listRef.current?.scrollToOffset({ offset: 0, animated });
   }, []);
+
+  useEffect(() => {
+    shouldStickToBottomRef.current = true;
+    requestAnimationFrame(() => {
+      scrollToBottom(false);
+    });
+  }, [scrollToBottom, state.sessionKey]);
 
   useEffect(() => {
     if (!shouldStickToBottomRef.current) {
       return;
     }
-
-    const timer = setTimeout(() => {
-      const animated = state.chatStream.trim().length === 0;
+    const animated = state.chatStream.trim().length === 0;
+    requestAnimationFrame(() => {
       scrollToBottom(animated);
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, [state.chatStream, threadItems.length, scrollToBottom]);
+    });
+  }, [scrollToBottom, state.chatStream, threadItems.length]);
 
   useEffect(() => {
     if (!connected) {
@@ -146,10 +158,17 @@ export function ChatScreen() {
   }, [actions, connected, state.modelOptions.length]);
 
   const onThreadScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const distanceFromBottom = contentSize.height - (contentOffset.y + layoutMeasurement.height);
-    shouldStickToBottomRef.current = distanceFromBottom <= autoScrollThreshold;
+    const { contentOffset } = event.nativeEvent;
+    shouldStickToBottomRef.current = contentOffset.y <= autoScrollThreshold;
   }, []);
+
+  const onThreadContentSizeChange = useCallback(() => {
+    if (!shouldStickToBottomRef.current) {
+      return;
+    }
+    const animated = state.chatStream.trim().length === 0;
+    scrollToBottom(animated);
+  }, [scrollToBottom, state.chatStream]);
 
   const onDraftChange = useCallback((nextDraft: string) => {
     setDraft(nextDraft);
@@ -162,6 +181,7 @@ export function ChatScreen() {
     if (sessionKey === state.sessionKey) {
       return;
     }
+    shouldStickToBottomRef.current = true;
     actions.setSessionKey(sessionKey);
     actions.clearChatError();
     void actions.refreshHistory();
@@ -350,11 +370,13 @@ export function ChatScreen() {
 
           <FlatList
             ref={listRef}
-            data={threadItems}
+            data={invertedThreadItems}
             keyExtractor={(item) => item.id}
             style={styles.threadList}
+            inverted
             contentContainerStyle={styles.threadContent}
             onScroll={onThreadScroll}
+            onContentSizeChange={onThreadContentSizeChange}
             scrollEventThrottle={16}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => {
