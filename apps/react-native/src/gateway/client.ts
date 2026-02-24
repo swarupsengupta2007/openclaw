@@ -91,11 +91,51 @@ export class GatewayClient {
       this.ws = ws;
       let connectSettled = false;
 
+      const handleOpen = () => {
+        this.challengeTimeoutId = setTimeout(() => {
+          this.closingByClient = true;
+          this.ws?.close(1008, 'connect challenge timeout');
+          rejectOnce(new Error(`Gateway connect challenge timeout (${CONNECT_CHALLENGE_TIMEOUT_MS}ms)`));
+        }, CONNECT_CHALLENGE_TIMEOUT_MS);
+      };
+
+      const handleMessage = (event: { data?: unknown }) => {
+        if (typeof event.data !== 'string') {
+          return;
+        }
+        this.handleMessage(event.data, params, resolveOnce, rejectOnce);
+      };
+
+      const handleError = () => {
+        clearTimeout(connectTimeoutId);
+        cleanup();
+        rejectOnce(new Error('Gateway WebSocket error'));
+      };
+
+      const handleClose = (event: { code?: number; reason?: string }) => {
+        clearTimeout(connectTimeoutId);
+        cleanup();
+        const code = typeof event.code === 'number' ? event.code : 1006;
+        const reason = typeof event.reason === 'string' ? event.reason : '';
+        const closedByClient = this.closingByClient;
+        this.closingByClient = false;
+        this.clearChallengeTimeout();
+        this.flushPending(new Error(`Gateway closed (${code}): ${reason}`));
+        this.ws = null;
+        if (!closedByClient) {
+          this.callbacks.onClose?.(code, reason);
+        }
+
+        if (!this.connectSent) {
+          rejectOnce(new Error(`Gateway closed before connect (${code})`));
+        }
+      };
+
       const cleanup = () => {
-        ws.onopen = null;
-        ws.onmessage = null;
-        ws.onerror = null;
-        ws.onclose = null;
+        ws.removeEventListener('open', handleOpen);
+        ws.removeEventListener('message', handleMessage);
+        ws.removeEventListener('error', handleError);
+        ws.removeEventListener('close', handleClose);
       };
 
       const rejectOnce = (reason: unknown) => {
@@ -122,41 +162,10 @@ export class GatewayClient {
         rejectOnce(new Error(`Gateway connect timeout (${CONNECT_TIMEOUT_MS}ms)`));
       }, CONNECT_TIMEOUT_MS);
 
-      ws.onopen = () => {
-        this.challengeTimeoutId = setTimeout(() => {
-          this.closingByClient = true;
-          this.ws?.close(1008, 'connect challenge timeout');
-          rejectOnce(new Error(`Gateway connect challenge timeout (${CONNECT_CHALLENGE_TIMEOUT_MS}ms)`));
-        }, CONNECT_CHALLENGE_TIMEOUT_MS);
-      };
-
-      ws.onmessage = (event) => {
-        const data = typeof event.data === 'string' ? event.data : String(event.data ?? '');
-        this.handleMessage(data, params, resolveOnce, rejectOnce);
-      };
-
-      ws.onerror = () => {
-        clearTimeout(connectTimeoutId);
-        cleanup();
-        rejectOnce(new Error('Gateway WebSocket error'));
-      };
-
-      ws.onclose = (event) => {
-        clearTimeout(connectTimeoutId);
-        const closedByClient = this.closingByClient;
-        this.closingByClient = false;
-        this.clearChallengeTimeout();
-        this.flushPending(new Error(`Gateway closed (${event.code}): ${event.reason}`));
-        this.ws = null;
-        if (!closedByClient) {
-          this.callbacks.onClose?.(event.code, event.reason);
-        }
-
-        if (!this.connectSent) {
-          cleanup();
-          rejectOnce(new Error(`Gateway closed before connect (${event.code})`));
-        }
-      };
+      ws.addEventListener('open', handleOpen);
+      ws.addEventListener('message', handleMessage);
+      ws.addEventListener('error', handleError);
+      ws.addEventListener('close', handleClose);
     });
   }
 
