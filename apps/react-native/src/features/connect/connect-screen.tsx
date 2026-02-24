@@ -1,8 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useAppStore } from '../../app/app-store';
+import { decodeSetupCode } from '../../gateway/setup-code';
 import { colors, gradients, radii, shadows, typography } from '../../app/theme';
 import { CodeBlock, Input, Label } from '../shared/ui';
 
@@ -17,6 +18,17 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
   const pairingRequestId = state.phase === 'pairing_required' ? extractRequestId(state.statusText) : null;
   const isConnected = state.phase === 'connected' || state.phase === 'connecting';
   const actionLabel = isConnected ? 'Disconnect Gateway' : 'Connect Gateway';
+
+  const applySetupCodeInput = useCallback((setupCode: string) => {
+    actions.setGatewayConfig({ setupCode });
+    if (setupCode.trim().length === 0) {
+      return;
+    }
+    if (!decodeSetupCode(setupCode)) {
+      return;
+    }
+    actions.applySetupCode();
+  }, [actions]);
 
   const endpoint = useMemo(() => {
     const scheme = state.gatewayConfig.tls ? 'wss' : 'ws';
@@ -89,19 +101,12 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
         {advancedOpen ? (
           <View style={styles.advancedPanel}>
             <View style={styles.section}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionTitle}>Quick setup</Text>
-                <Pressable
-                  onPress={actions.applySetupCode}
-                  style={({ pressed }) => [styles.inlineAction, pressed ? styles.inlineActionPressed : undefined]}
-                >
-                  <Text style={styles.inlineActionText}>Apply code</Text>
-                </Pressable>
-              </View>
+              <Text style={styles.sectionTitle}>Quick setup</Text>
+              <Text style={styles.sectionHint}>Setup code auto-applies when valid.</Text>
               <Input
                 placeholder="Paste setup code"
                 value={state.gatewayConfig.setupCode}
-                onChangeText={(setupCode) => actions.setGatewayConfig({ setupCode })}
+                onChangeText={applySetupCodeInput}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
@@ -176,9 +181,12 @@ export function ConnectScreen({ onResetOnboarding }: { onResetOnboarding: () => 
                 onPress={() => {
                   void onResetOnboarding();
                 }}
-                style={({ pressed }) => [styles.inlineAction, pressed ? styles.inlineActionPressed : undefined]}
+                style={({ pressed }) => [
+                  styles.secondaryWideAction,
+                  pressed ? styles.secondaryWideActionPressed : undefined,
+                ]}
               >
-                <Text style={styles.inlineActionText}>Run onboarding again</Text>
+                <Text style={styles.secondaryWideActionLabel}>Run onboarding again</Text>
               </Pressable>
             </View>
           </View>
@@ -326,11 +334,6 @@ const styles = StyleSheet.create({
   section: {
     gap: 10,
   },
-  sectionHeaderRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
   sectionTitle: {
     ...typography.headline,
     color: colors.text,
@@ -343,24 +346,22 @@ const styles = StyleSheet.create({
     minHeight: 90,
     paddingTop: 14,
   },
-  inlineAction: {
+  secondaryWideAction: {
     alignItems: 'center',
-    alignSelf: 'flex-start',
     borderColor: colors.borderStrong,
-    borderRadius: 10,
+    borderRadius: radii.button,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 34,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    minHeight: 48,
+    paddingHorizontal: 14,
   },
-  inlineActionPressed: {
-    opacity: 0.82,
+  secondaryWideActionPressed: {
+    opacity: 0.88,
   },
-  inlineActionText: {
-    ...typography.caption1,
+  secondaryWideActionLabel: {
+    ...typography.headline,
     color: colors.accent,
-    letterSpacing: 0.2,
+    fontWeight: '700',
   },
   divider: {
     backgroundColor: colors.border,
