@@ -31,7 +31,7 @@ function normalizeScopes(scopes: string[]): string[] {
       out.add(trimmed);
     }
   }
-  return [...out].sort();
+  return [...out].toSorted();
 }
 
 function encodeBase64Url(bytes: Uint8Array): string {
