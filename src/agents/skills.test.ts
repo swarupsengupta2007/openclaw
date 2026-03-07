@@ -252,7 +252,7 @@ describe("applySkillEnvOverrides", () => {
     withClearedEnv(["ENV_KEY"], () => {
       const restore = applySkillEnvOverrides({
         skills: entries,
-        config: { skills: { entries: { "env-skill": { apiKey: "injected" } } } },
+        config: { skills: { entries: { "env-skill": { apiKey: "injected" } } } }, // pragma: allowlist secret
       });
 
       try {
@@ -278,13 +278,13 @@ describe("applySkillEnvOverrides", () => {
 
     const snapshot = buildWorkspaceSkillSnapshot(workspaceDir, {
       ...resolveTestSkillDirs(workspaceDir),
-      config: { skills: { entries: { "env-skill": { apiKey: "snap-key" } } } },
+      config: { skills: { entries: { "env-skill": { apiKey: "snap-key" } } } }, // pragma: allowlist secret
     });
 
     withClearedEnv(["ENV_KEY"], () => {
       const restore = applySkillEnvOverridesFromSnapshot({
         snapshot,
-        config: { skills: { entries: { "env-skill": { apiKey: "snap-key" } } } },
+        config: { skills: { entries: { "env-skill": { apiKey: "snap-key" } } } }, // pragma: allowlist secret
       });
 
       try {
@@ -317,7 +317,7 @@ describe("applySkillEnvOverrides", () => {
             entries: {
               "unsafe-env-skill": {
                 env: {
-                  OPENAI_API_KEY: "sk-test",
+                  OPENAI_API_KEY: "sk-test", // pragma: allowlist secret
                   NODE_OPTIONS: "--require /tmp/evil.js",
                 },
               },
@@ -392,7 +392,7 @@ describe("applySkillEnvOverrides", () => {
         entries: {
           "snapshot-env-skill": {
             env: {
-              OPENAI_API_KEY: "snap-secret",
+              OPENAI_API_KEY: "snap-secret", // pragma: allowlist secret
             },
           },
         },

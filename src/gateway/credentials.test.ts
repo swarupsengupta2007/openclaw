@@ -12,11 +12,11 @@ function cfg(input: Partial<OpenClawConfig>): OpenClawConfig {
 type ResolveFromConfigInput = Parameters<typeof resolveGatewayCredentialsFromConfig>[0];
 type GatewayConfig = NonNullable<OpenClawConfig["gateway"]>;
 
-const DEFAULT_GATEWAY_AUTH = { token: "config-token", password: "config-password" };
-const DEFAULT_REMOTE_AUTH = { token: "remote-token", password: "remote-password" };
+const DEFAULT_GATEWAY_AUTH = { token: "config-token", password: "config-password" }; // pragma: allowlist secret
+const DEFAULT_REMOTE_AUTH = { token: "remote-token", password: "remote-password" }; // pragma: allowlist secret
 const DEFAULT_GATEWAY_ENV = {
   OPENCLAW_GATEWAY_TOKEN: "env-token",
-  OPENCLAW_GATEWAY_PASSWORD: "env-password",
+  OPENCLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
 } as NodeJS.ProcessEnv;
 
 function resolveGatewayCredentialsFor(
@@ -33,7 +33,7 @@ function resolveGatewayCredentialsFor(
 function expectEnvGatewayCredentials(resolved: { token?: string; password?: string }) {
   expect(resolved).toEqual({
     token: "env-token",
-    password: "env-password",
+    password: "env-password", // pragma: allowlist secret
   });
 }
 
@@ -57,12 +57,12 @@ describe("resolveGatewayCredentialsFromConfig", () => {
         auth: DEFAULT_GATEWAY_AUTH,
       },
       {
-        explicitAuth: { token: "explicit-token", password: "explicit-password" },
+        explicitAuth: { token: "explicit-token", password: "explicit-password" }, // pragma: allowlist secret
       },
     );
     expect(resolved).toEqual({
       token: "explicit-token",
-      password: "explicit-password",
+      password: "explicit-password", // pragma: allowlist secret
     });
   });
 
@@ -104,7 +104,7 @@ describe("resolveGatewayCredentialsFromConfig", () => {
       cfg: cfg({
         gateway: {
           mode: "local",
-          remote: { token: "remote-token", password: "remote-password" },
+          remote: { token: "remote-token", password: "remote-password" }, // pragma: allowlist secret
           auth: {},
         },
       }),
@@ -113,7 +113,7 @@ describe("resolveGatewayCredentialsFromConfig", () => {
     });
     expect(resolved).toEqual({
       token: "remote-token",
-      password: "remote-password",
+      password: "remote-password", // pragma: allowlist secret
     });
   });
 
@@ -236,8 +236,8 @@ describe("resolveGatewayCredentialsFromConfig", () => {
       cfg: cfg({
         gateway: {
           mode: "local",
-          remote: { token: "remote-token", password: "remote-password" },
-          auth: { token: "local-token", password: "local-password" },
+          remote: { token: "remote-token", password: "remote-password" }, // pragma: allowlist secret
+          auth: { token: "local-token", password: "local-password" }, // pragma: allowlist secret
         },
       }),
       env: {} as NodeJS.ProcessEnv,
@@ -245,7 +245,7 @@ describe("resolveGatewayCredentialsFromConfig", () => {
     });
     expect(resolved).toEqual({
       token: "local-token",
-      password: "local-password",
+      password: "local-password", // pragma: allowlist secret
     });
   });
 
@@ -253,7 +253,7 @@ describe("resolveGatewayCredentialsFromConfig", () => {
     const resolved = resolveRemoteModeWithRemoteCredentials();
     expect(resolved).toEqual({
       token: "remote-token",
-      password: "env-password",
+      password: "env-password", // pragma: allowlist secret
     });
   });
 
@@ -268,22 +268,22 @@ describe("resolveGatewayCredentialsFromConfig", () => {
 
   it("supports env-first password override in remote mode for gateway call path", () => {
     const resolved = resolveRemoteModeWithRemoteCredentials({
-      remotePasswordPrecedence: "env-first",
+      remotePasswordPrecedence: "env-first", // pragma: allowlist secret
     });
     expect(resolved).toEqual({
       token: "remote-token",
-      password: "env-password",
+      password: "env-password", // pragma: allowlist secret
     });
   });
 
   it("supports env-first token precedence in remote mode", () => {
     const resolved = resolveRemoteModeWithRemoteCredentials({
       remoteTokenPrecedence: "env-first",
-      remotePasswordPrecedence: "remote-first",
+      remotePasswordPrecedence: "remote-first", // pragma: allowlist secret
     });
     expect(resolved).toEqual({
       token: "env-token",
-      password: "remote-password",
+      password: "remote-password", // pragma: allowlist secret
     });
   });
 
@@ -295,7 +295,7 @@ describe("resolveGatewayCredentialsFromConfig", () => {
         auth: DEFAULT_GATEWAY_AUTH,
       },
       {
-        remotePasswordFallback: "remote-only",
+        remotePasswordFallback: "remote-only", // pragma: allowlist secret
       },
     );
     expect(resolved).toEqual({
@@ -368,7 +368,7 @@ describe("resolveGatewayCredentialsFromConfig", () => {
       env: {} as NodeJS.ProcessEnv,
       includeLegacyEnv: false,
       remoteTokenFallback: "remote-only",
-      remotePasswordFallback: "remote-only",
+      remotePasswordFallback: "remote-only", // pragma: allowlist secret
     });
     expect(resolved).toEqual({
       token: undefined,
@@ -399,7 +399,7 @@ describe("resolveGatewayCredentialsFromConfig", () => {
         env: {} as NodeJS.ProcessEnv,
         includeLegacyEnv: false,
         remoteTokenFallback: "remote-env-local",
-        remotePasswordFallback: "remote-only",
+        remotePasswordFallback: "remote-only", // pragma: allowlist secret
       }),
     ).toThrow("gateway.auth.token");
   });
@@ -412,7 +412,7 @@ describe("resolveGatewayCredentialsFromConfig", () => {
           remote: {
             url: "wss://gateway.example",
             token: { source: "env", provider: "default", id: "MISSING_REMOTE_TOKEN" },
-            password: "remote-password",
+            password: "remote-password", // pragma: allowlist secret
           },
           auth: {},
         },
@@ -427,7 +427,7 @@ describe("resolveGatewayCredentialsFromConfig", () => {
     });
     expect(resolved).toEqual({
       token: undefined,
-      password: "remote-password",
+      password: "remote-password", // pragma: allowlist secret
     });
   });
 
@@ -451,7 +451,7 @@ describe("resolveGatewayCredentialsFromConfig", () => {
         } as unknown as OpenClawConfig,
         env: {} as NodeJS.ProcessEnv,
         includeLegacyEnv: false,
-        remotePasswordFallback: "remote-only",
+        remotePasswordFallback: "remote-only", // pragma: allowlist secret
       }),
     ).toThrow("gateway.remote.password");
   });
@@ -465,7 +465,7 @@ describe("resolveGatewayCredentialsFromConfig", () => {
       }),
       env: {
         CLAWDBOT_GATEWAY_TOKEN: "legacy-token",
-        CLAWDBOT_GATEWAY_PASSWORD: "legacy-password",
+        CLAWDBOT_GATEWAY_PASSWORD: "legacy-password", // pragma: allowlist secret
       } as NodeJS.ProcessEnv,
       includeLegacyEnv: false,
     });
@@ -477,33 +477,33 @@ describe("resolveGatewayCredentialsFromValues", () => {
   it("supports config-first precedence for token/password", () => {
     const resolved = resolveGatewayCredentialsFromValues({
       configToken: "config-token",
-      configPassword: "config-password",
+      configPassword: "config-password", // pragma: allowlist secret
       env: {
         OPENCLAW_GATEWAY_TOKEN: "env-token",
-        OPENCLAW_GATEWAY_PASSWORD: "env-password",
+        OPENCLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
       } as NodeJS.ProcessEnv,
       includeLegacyEnv: false,
       tokenPrecedence: "config-first",
-      passwordPrecedence: "config-first",
+      passwordPrecedence: "config-first", // pragma: allowlist secret
     });
     expect(resolved).toEqual({
       token: "config-token",
-      password: "config-password",
+      password: "config-password", // pragma: allowlist secret
     });
   });
 
   it("uses env-first precedence by default", () => {
     const resolved = resolveGatewayCredentialsFromValues({
       configToken: "config-token",
-      configPassword: "config-password",
+      configPassword: "config-password", // pragma: allowlist secret
       env: {
         OPENCLAW_GATEWAY_TOKEN: "env-token",
-        OPENCLAW_GATEWAY_PASSWORD: "env-password",
+        OPENCLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
       } as NodeJS.ProcessEnv,
     });
     expect(resolved).toEqual({
       token: "env-token",
-      password: "env-password",
+      password: "env-password", // pragma: allowlist secret
     });
   });
 });
