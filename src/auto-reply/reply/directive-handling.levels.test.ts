@@ -81,7 +81,7 @@ describe("resolveCurrentDirectiveLevels", () => {
   });
 
   it("falls back to agent reasoningDefault when session override is absent", async () => {
-    const resolveDefaultThinkingLevel = vi.fn().mockResolvedValue("low");
+    const resolveDefaultThinkingLevel = vi.fn().mockResolvedValue("off");
 
     const result = await resolveCurrentDirectiveLevels({
       sessionEntry: {},
@@ -92,5 +92,19 @@ describe("resolveCurrentDirectiveLevels", () => {
     });
 
     expect(result.currentReasoningLevel).toBe("stream");
+  });
+
+  it("skips agent reasoningDefault when thinking is active", async () => {
+    const resolveDefaultThinkingLevel = vi.fn().mockResolvedValue("low");
+
+    const result = await resolveCurrentDirectiveLevels({
+      sessionEntry: {},
+      agentEntry: {
+        reasoningDefault: "stream",
+      },
+      resolveDefaultThinkingLevel,
+    });
+
+    expect(result.currentReasoningLevel).toBe("off");
   });
 });

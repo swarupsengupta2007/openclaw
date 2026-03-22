@@ -465,10 +465,10 @@ export async function resolveReplyDirectives(params: {
     directives.reasoningLevel !== undefined ||
     (sessionEntry?.reasoningLevel !== undefined && sessionEntry?.reasoningLevel !== null);
   const thinkingActive = resolvedThinkLevelWithDefault !== "off";
-  if (!reasoningExplicitlySet && resolvedReasoningLevel === "off") {
+  if (!reasoningExplicitlySet && resolvedReasoningLevel === "off" && !thinkingActive) {
     if (hasAgentReasoningDefault) {
       resolvedReasoningLevel = agentReasoningDefault;
-    } else if (!thinkingActive) {
+    } else {
       resolvedReasoningLevel = await modelState.resolveDefaultReasoningLevel();
     }
   }
