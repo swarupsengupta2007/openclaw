@@ -173,6 +173,65 @@ describe("resolvePluginWebSearchProviders", () => {
     expect(loadOpenClawPluginsMock).toHaveBeenCalledTimes(2);
   });
 
+  it("skips web-search snapshot memoization when discovery cache ttl is zero", () => {
+    const config = {
+      plugins: {
+        allow: ["brave"],
+      },
+    };
+    const env = {
+      OPENCLAW_HOME: "/tmp/openclaw-home",
+      OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS: "0",
+    } as NodeJS.ProcessEnv;
+
+    resolvePluginWebSearchProviders({
+      config,
+      env,
+      bundledAllowlistCompat: true,
+      workspaceDir: "/tmp/workspace",
+    });
+    resolvePluginWebSearchProviders({
+      config,
+      env,
+      bundledAllowlistCompat: true,
+      workspaceDir: "/tmp/workspace",
+    });
+
+    expect(loadOpenClawPluginsMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("invalidates the snapshot cache when global Vitest fallback changes", () => {
+    const originalVitest = process.env.VITEST;
+    const config = {};
+    const env = { OPENCLAW_HOME: "/tmp/openclaw-home" } as NodeJS.ProcessEnv;
+
+    try {
+      delete process.env.VITEST;
+      resolvePluginWebSearchProviders({
+        config,
+        env,
+        bundledAllowlistCompat: true,
+        workspaceDir: "/tmp/workspace",
+      });
+
+      process.env.VITEST = "1";
+      resolvePluginWebSearchProviders({
+        config,
+        env,
+        bundledAllowlistCompat: true,
+        workspaceDir: "/tmp/workspace",
+      });
+    } finally {
+      if (originalVitest === undefined) {
+        delete process.env.VITEST;
+      } else {
+        process.env.VITEST = originalVitest;
+      }
+    }
+
+    expect(loadOpenClawPluginsMock).toHaveBeenCalledTimes(2);
+  });
+
   it("prefers the active plugin registry for runtime resolution", () => {
     const registry = createEmptyPluginRegistry();
     registry.webSearchProviders.push({

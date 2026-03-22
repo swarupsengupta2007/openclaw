@@ -23,6 +23,10 @@ function shouldUseWebSearchProviderSnapshotCache(env: NodeJS.ProcessEnv): boolea
   if (env.OPENCLAW_DISABLE_PLUGIN_MANIFEST_CACHE?.trim()) {
     return false;
   }
+  const discoveryCacheMs = env.OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS?.trim();
+  if (discoveryCacheMs === "0") {
+    return false;
+  }
   const manifestCacheMs = env.OPENCLAW_PLUGIN_MANIFEST_CACHE_MS?.trim();
   if (manifestCacheMs === "0") {
     return false;
@@ -36,6 +40,7 @@ function buildWebSearchSnapshotCacheKey(params: {
   bundledAllowlistCompat?: boolean;
   env: NodeJS.ProcessEnv;
 }): string {
+  const effectiveVitest = params.env.VITEST ?? process.env.VITEST ?? "";
   return JSON.stringify({
     workspaceDir: params.workspaceDir ?? "",
     bundledAllowlistCompat: params.bundledAllowlistCompat === true,
@@ -48,7 +53,7 @@ function buildWebSearchSnapshotCacheKey(params: {
       OPENCLAW_CONFIG_PATH: params.env.OPENCLAW_CONFIG_PATH ?? "",
       HOME: params.env.HOME ?? "",
       USERPROFILE: params.env.USERPROFILE ?? "",
-      VITEST: params.env.VITEST ?? "",
+      VITEST: effectiveVitest,
     },
   });
 }

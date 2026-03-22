@@ -24,6 +24,10 @@ function shouldUseProviderWizardCache(env: NodeJS.ProcessEnv): boolean {
   if (env.OPENCLAW_DISABLE_PLUGIN_MANIFEST_CACHE?.trim()) {
     return false;
   }
+  const discoveryCacheMs = env.OPENCLAW_PLUGIN_DISCOVERY_CACHE_MS?.trim();
+  if (discoveryCacheMs === "0") {
+    return false;
+  }
   const manifestCacheMs = env.OPENCLAW_PLUGIN_MANIFEST_CACHE_MS?.trim();
   if (manifestCacheMs === "0") {
     return false;
