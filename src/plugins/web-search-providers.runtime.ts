@@ -16,6 +16,29 @@ const webSearchProviderSnapshotCache = new WeakMap<
   WeakMap<NodeJS.ProcessEnv, Map<string, PluginWebSearchProviderEntry[]>>
 >();
 
+function buildWebSearchSnapshotCacheKey(params: {
+  config?: OpenClawConfig;
+  workspaceDir?: string;
+  bundledAllowlistCompat?: boolean;
+  env: NodeJS.ProcessEnv;
+}): string {
+  return JSON.stringify({
+    workspaceDir: params.workspaceDir ?? "",
+    bundledAllowlistCompat: params.bundledAllowlistCompat === true,
+    config: params.config ?? null,
+    env: {
+      OPENCLAW_BUNDLED_PLUGINS_DIR: params.env.OPENCLAW_BUNDLED_PLUGINS_DIR ?? "",
+      OPENCLAW_HOME: params.env.OPENCLAW_HOME ?? "",
+      OPENCLAW_STATE_DIR: params.env.OPENCLAW_STATE_DIR ?? "",
+      CLAWDBOT_STATE_DIR: params.env.CLAWDBOT_STATE_DIR ?? "",
+      OPENCLAW_CONFIG_PATH: params.env.OPENCLAW_CONFIG_PATH ?? "",
+      HOME: params.env.HOME ?? "",
+      USERPROFILE: params.env.USERPROFILE ?? "",
+      VITEST: params.env.VITEST ?? "",
+    },
+  });
+}
+
 export function resolvePluginWebSearchProviders(params: {
   config?: PluginLoadOptions["config"];
   workspaceDir?: string;
@@ -26,15 +49,13 @@ export function resolvePluginWebSearchProviders(params: {
 }): PluginWebSearchProviderEntry[] {
   const env = params.env ?? process.env;
   const cacheOwnerConfig = params.config;
-  const cacheKey = JSON.stringify({
-    workspaceDir: params.workspaceDir ?? "",
-    bundledAllowlistCompat: params.bundledAllowlistCompat === true,
-  });
-  const { config } = resolveBundledWebSearchResolutionConfig({
-    ...params,
+  const shouldMemoizeSnapshot = params.activate !== true && params.cache !== true;
+  const cacheKey = buildWebSearchSnapshotCacheKey({
+    config: cacheOwnerConfig,
+    workspaceDir: params.workspaceDir,
+    bundledAllowlistCompat: params.bundledAllowlistCompat,
     env,
   });
-  const shouldMemoizeSnapshot = params.activate !== true && params.cache !== true;
   if (cacheOwnerConfig && shouldMemoizeSnapshot) {
     const configCache = webSearchProviderSnapshotCache.get(cacheOwnerConfig);
     const envCache = configCache?.get(env);
@@ -43,6 +64,10 @@ export function resolvePluginWebSearchProviders(params: {
       return cached;
     }
   }
+  const { config } = resolveBundledWebSearchResolutionConfig({
+    ...params,
+    env,
+  });
   const registry = loadOpenClawPlugins({
     config,
     workspaceDir: params.workspaceDir,
