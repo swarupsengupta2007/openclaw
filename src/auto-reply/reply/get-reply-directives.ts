@@ -6,8 +6,8 @@ import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/runtime-status
 import type { SkillCommandSpec } from "../../agents/skills.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
-import { shouldHandleTextCommands } from "../commands-text-routing.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
+import { shouldHandleTextCommands } from "../commands-text-routing.js";
 import type { MsgContext, TemplateContext } from "../templating.js";
 import type { ElevatedLevel, ReasoningLevel, ThinkLevel, VerboseLevel } from "../thinking.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
