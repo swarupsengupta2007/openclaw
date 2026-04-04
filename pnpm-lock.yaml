@@ -917,7 +917,11 @@ importers:
         specifier: workspace:*
         version: link:../..
 
-  extensions/video-generation-core: {}
+  extensions/video-generation-core:
+    devDependencies:
+      openclaw:
+        specifier: workspace:*
+        version: link:../..
 
   extensions/vllm:
     devDependencies:
