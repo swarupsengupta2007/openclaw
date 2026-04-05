@@ -1,0 +1,51 @@
+{
+  "$schema": "../node_modules/oxlint/configuration_schema.json",
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "openclaw",
+            "message": "Bundled plugin production code must import openclaw/plugin-sdk/* or same-package relative files, not the root openclaw entrypoint."
+          },
+          {
+            "name": "openclaw/plugin-sdk-internal",
+            "message": "Bundled plugin production code must not import plugin-sdk internals."
+          }
+        ],
+        "patterns": [
+          {
+            "group": ["@openclaw/*"],
+            "message": "Bundled plugin production code must not import other bundled plugins by package name. Use openclaw/plugin-sdk/* or same-package relative imports."
+          },
+          {
+            "group": ["openclaw/plugin-sdk-internal/*"],
+            "message": "Bundled plugin production code must not import plugin-sdk internals."
+          },
+          {
+            "group": ["src", "src/*"],
+            "message": "Bundled plugin production code must not import core src/* directly. Use openclaw/plugin-sdk/* instead."
+          },
+          {
+            "group": [
+              "../../src",
+              "../../src/*",
+              "../../../src",
+              "../../../src/*",
+              "../../../../src",
+              "../../../../src/*",
+              "../../../../../src",
+              "../../../../../src/*",
+              "../../../../../../src",
+              "../../../../../../src/*",
+              "../../../../../../../src",
+              "../../../../../../../src/*"
+            ],
+            "message": "Bundled plugin production code must not import core src/* by relative path. Use openclaw/plugin-sdk/* instead."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -15,6 +15,14 @@ type TsConfigJson = {
   exclude?: unknown;
 };
 
+type OxlintConfigJson = {
+  rules?: Record<string, unknown>;
+};
+
+type PackageJson = {
+  scripts?: Record<string, string>;
+};
+
 function readJsonFile<T>(relativePath: string): T {
   return JSON.parse(readFileSync(resolve(REPO_ROOT, relativePath), "utf8")) as T;
 }
@@ -119,5 +127,69 @@ describe("workspace-local TypeScript project boundaries", () => {
     expect(uiTsconfig.extends).toBe("../tsconfig.base.json");
     expect(Array.isArray(uiTsconfig.include)).toBe(true);
     expect(Array.isArray(uiTsconfig.exclude)).toBe(true);
+  });
+
+  it("keeps extension import lint wired into the local lint loop", () => {
+    const packageJson = readJsonFile<PackageJson>("package.json");
+    expect(packageJson.scripts?.lint).toContain("pnpm lint:extensions:imports");
+    expect(packageJson.scripts?.["lint:extensions:imports"]).toBe(
+      "node scripts/run-extension-import-lint.mjs",
+    );
+  });
+
+  it("keeps extension import lint focused on forbidden cross-package surfaces", () => {
+    const oxlintConfig = readJsonFile<OxlintConfigJson>(
+      "extensions/.oxlintrc.import-boundaries.json",
+    );
+    expect(oxlintConfig.rules?.["no-restricted-imports"]).toEqual([
+      "error",
+      {
+        paths: [
+          {
+            name: "openclaw",
+            message:
+              "Bundled plugin production code must import openclaw/plugin-sdk/* or same-package relative files, not the root openclaw entrypoint.",
+          },
+          {
+            name: "openclaw/plugin-sdk-internal",
+            message: "Bundled plugin production code must not import plugin-sdk internals.",
+          },
+        ],
+        patterns: [
+          {
+            group: ["@openclaw/*"],
+            message:
+              "Bundled plugin production code must not import other bundled plugins by package name. Use openclaw/plugin-sdk/* or same-package relative imports.",
+          },
+          {
+            group: ["openclaw/plugin-sdk-internal/*"],
+            message: "Bundled plugin production code must not import plugin-sdk internals.",
+          },
+          {
+            group: ["src", "src/*"],
+            message:
+              "Bundled plugin production code must not import core src/* directly. Use openclaw/plugin-sdk/* instead.",
+          },
+          {
+            group: [
+              "../../src",
+              "../../src/*",
+              "../../../src",
+              "../../../src/*",
+              "../../../../src",
+              "../../../../src/*",
+              "../../../../../src",
+              "../../../../../src/*",
+              "../../../../../../src",
+              "../../../../../../src/*",
+              "../../../../../../../src",
+              "../../../../../../../src/*",
+            ],
+            message:
+              "Bundled plugin production code must not import core src/* by relative path. Use openclaw/plugin-sdk/* instead.",
+          },
+        ],
+      },
+    ]);
   });
 });
