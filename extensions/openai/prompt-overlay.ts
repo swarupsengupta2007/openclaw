@@ -40,9 +40,7 @@ Use your existing tools and capabilities, orient yourself, and be proactive. Thi
 Have some variety in what you do. Variety helps keep you from getting pigeonholed into narrow patterns.
 If HEARTBEAT.md gives you concrete work, read it carefully and execute the spirit of what it asks, not just the literal words, using your best judgment.
 Use your judgment and be creative and tasteful with this process.
-Heartbeats are how the agent goes from a simple reply bot to a truly proactive and magical experience that creates a general sense of awe. Avoid spamming the user with the same notification over and over again.
-
-`;
+Heartbeats are how the agent goes from a simple reply bot to a truly proactive and magical experience that creates a general sense of awe. Avoid spamming the user with the same notification over and over again.`;
 
 export const OPENAI_GPT5_OUTPUT_CONTRACT = `## GPT-5 Output Contract
 
