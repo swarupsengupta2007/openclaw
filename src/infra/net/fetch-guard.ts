@@ -120,8 +120,8 @@ function resolveGuardedFetchMode(params: GuardedFetchOptions): GuardedFetchMode 
   return GUARDED_FETCH_MODE.STRICT;
 }
 
-function isManagedSsrFProxyActive(): boolean {
-  return process.env["OPENCLAW_SSRF_PROXY_ACTIVE"] === "1";
+function isManagedProxyActive(): boolean {
+  return process.env["OPENCLAW_PROXY_ACTIVE"] === "1";
 }
 
 function assertExplicitProxySupportsPinnedDns(
@@ -360,12 +360,12 @@ export async function fetchWithSsrFGuard(params: GuardedFetchOptions): Promise<G
       await assertExplicitProxyAllowed(params.dispatcherPolicy, params.lookupFn, params.policy);
       const canUseTrustedEnvProxy =
         mode === GUARDED_FETCH_MODE.TRUSTED_ENV_PROXY && hasProxyEnvConfigured();
-      const canUseManagedSsrFProxy =
-        mode === GUARDED_FETCH_MODE.STRICT && isManagedSsrFProxyActive() && hasProxyEnvConfigured();
+      const canUseManagedProxy =
+        mode === GUARDED_FETCH_MODE.STRICT && isManagedProxyActive() && hasProxyEnvConfigured();
       const timeoutMs = resolveDispatcherTimeoutMs(params.timeoutMs);
       if (canUseTrustedEnvProxy) {
         dispatcher = createHttp1EnvHttpProxyAgent(undefined, timeoutMs);
-      } else if (canUseManagedSsrFProxy) {
+      } else if (canUseManagedProxy) {
         await resolvePinnedHostnameWithPolicy(parsedUrl.hostname, {
           lookupFn: params.lookupFn,
           policy: params.policy,

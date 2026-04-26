@@ -1,17 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { SsrFProxyConfigSchema } from "./proxy-config-schema.js";
+import { ProxyConfigSchema } from "./proxy-config-schema.js";
 
-describe("SsrFProxyConfigSchema", () => {
+describe("ProxyConfigSchema", () => {
   it("accepts undefined (optional)", () => {
-    expect(SsrFProxyConfigSchema.parse(undefined)).toBeUndefined();
+    expect(ProxyConfigSchema.parse(undefined)).toBeUndefined();
   });
 
   it("accepts an empty object", () => {
-    expect(SsrFProxyConfigSchema.parse({})).toEqual({});
+    expect(ProxyConfigSchema.parse({})).toEqual({});
   });
 
   it("accepts a full valid config", () => {
-    const result = SsrFProxyConfigSchema.parse({
+    const result = ProxyConfigSchema.parse({
       enabled: true,
       proxyUrl: "http://127.0.0.1:3128",
     });
@@ -23,7 +23,7 @@ describe("SsrFProxyConfigSchema", () => {
 
   it("rejects HTTPS proxy URLs because the node:http routing layer requires HTTP proxies", () => {
     expect(() =>
-      SsrFProxyConfigSchema.parse({
+      ProxyConfigSchema.parse({
         enabled: true,
         proxyUrl: "https://proxy.example.com:8443",
       }),
@@ -31,7 +31,7 @@ describe("SsrFProxyConfigSchema", () => {
   });
 
   it("does not expose bundled-proxy or unsupported upstream proxy keys", () => {
-    const keys = SsrFProxyConfigSchema.unwrap().keyof().options;
+    const keys = ProxyConfigSchema.unwrap().keyof().options;
     expect(keys).not.toContain("binaryPath");
     expect(keys).not.toContain("extraBlockedCidrs");
     expect(keys).not.toContain("extraAllowedHosts");
@@ -40,17 +40,17 @@ describe("SsrFProxyConfigSchema", () => {
 
   it("rejects proxyUrl values that are not HTTP forward proxies", () => {
     expect(() =>
-      SsrFProxyConfigSchema.parse({ enabled: true, proxyUrl: "socks5://127.0.0.1" }),
+      ProxyConfigSchema.parse({ enabled: true, proxyUrl: "socks5://127.0.0.1" }),
     ).toThrow();
-    expect(() => SsrFProxyConfigSchema.parse({ enabled: true, proxyUrl: "not-a-url" })).toThrow();
+    expect(() => ProxyConfigSchema.parse({ enabled: true, proxyUrl: "not-a-url" })).toThrow();
   });
 
   it("rejects unknown keys (strict)", () => {
-    expect(() => SsrFProxyConfigSchema.parse({ unknownKey: true })).toThrow();
+    expect(() => ProxyConfigSchema.parse({ unknownKey: true })).toThrow();
   });
 
   it("accepts enabled: false to disable the proxy", () => {
-    const result = SsrFProxyConfigSchema.parse({ enabled: false });
+    const result = ProxyConfigSchema.parse({ enabled: false });
     expect(result?.enabled).toBe(false);
   });
 });

@@ -169,7 +169,7 @@ describe("SSRF external proxy routing", () => {
       `
         import http from "node:http";
         import { fetch as undiciFetch } from "undici";
-        import { startSsrFProxy, stopSsrFProxy } from "./src/infra/net/ssrf-proxy/proxy-lifecycle.ts";
+        import { startProxy, stopProxy } from "./src/infra/net/proxy/proxy-lifecycle.ts";
 
         async function nodeHttpGet(url) {
           return new Promise((resolve, reject) => {
@@ -190,9 +190,9 @@ describe("SSRF external proxy routing", () => {
           });
         }
 
-        const handle = await startSsrFProxy({ enabled: true });
+        const handle = await startProxy({ enabled: true });
         if (handle === null) {
-          throw new Error("expected external SSRF proxy routing to start");
+          throw new Error("expected external proxy routing to start");
         }
         try {
           const response = await undiciFetch(process.env.OPENCLAW_TEST_TARGET_URL, {
@@ -202,12 +202,12 @@ describe("SSRF external proxy routing", () => {
           const nodeHttp = await nodeHttpGet(process.env.OPENCLAW_TEST_NODE_HTTP_TARGET_URL);
           console.log(JSON.stringify({ fetch: { status: response.status, body }, nodeHttp }));
         } finally {
-          await stopSsrFProxy(handle);
+          await stopProxy(handle);
         }
       `,
       {
         ...process.env,
-        OPENCLAW_SSRF_PROXY_URL: `http://127.0.0.1:${proxyPort}`,
+        OPENCLAW_PROXY_URL: `http://127.0.0.1:${proxyPort}`,
         OPENCLAW_TEST_TARGET_URL: `http://127.0.0.1:${targetPort}/private-metadata`,
         OPENCLAW_TEST_NODE_HTTP_TARGET_URL: `http://127.0.0.1:${targetPort}/node-http-metadata`,
         NO_PROXY: "127.0.0.1,localhost",

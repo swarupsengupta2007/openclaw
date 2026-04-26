@@ -1,6 +1,6 @@
 /**
- * High-level lifecycle management for OpenClaw's operator-managed SSRF
- * network proxy routing.
+ * High-level lifecycle management for OpenClaw's operator-managed network
+ * proxy routing.
  *
  * OpenClaw does not spawn or configure the filtering proxy. When enabled, it
  * routes process-wide HTTP clients through the configured forward proxy URL and
@@ -12,9 +12,9 @@ import https from "node:https";
 import { bootstrap as bootstrapGlobalAgent } from "global-agent";
 import { logInfo, logWarn } from "../../../logger.js";
 import { forceResetGlobalDispatcher } from "../undici-global-dispatcher.js";
-import type { SsrFProxyConfig } from "./proxy-config-schema.js";
+import type { ProxyConfig } from "./proxy-config-schema.js";
 
-export type SsrFProxyHandle = {
+export type ProxyHandle = {
   /** The operator-managed proxy URL injected into process.env. */
   proxyUrl: string;
   /** Alias kept for CLI cleanup tests and logs. */
@@ -31,13 +31,13 @@ const PROXY_ENV_KEYS = ["http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY"
 const GLOBAL_AGENT_PROXY_KEYS = ["GLOBAL_AGENT_HTTP_PROXY", "GLOBAL_AGENT_HTTPS_PROXY"] as const;
 const GLOBAL_AGENT_FORCE_KEYS = ["GLOBAL_AGENT_FORCE_GLOBAL_AGENT"] as const;
 const NO_PROXY_ENV_KEYS = ["no_proxy", "NO_PROXY", "GLOBAL_AGENT_NO_PROXY"] as const;
-const SSRF_PROXY_ACTIVE_KEYS = ["OPENCLAW_SSRF_PROXY_ACTIVE"] as const;
+const PROXY_ACTIVE_KEYS = ["OPENCLAW_PROXY_ACTIVE"] as const;
 const ALL_PROXY_ENV_KEYS = [
   ...PROXY_ENV_KEYS,
   ...GLOBAL_AGENT_PROXY_KEYS,
   ...GLOBAL_AGENT_FORCE_KEYS,
   ...NO_PROXY_ENV_KEYS,
-  ...SSRF_PROXY_ACTIVE_KEYS,
+  ...PROXY_ACTIVE_KEYS,
 ] as const;
 type ProxyEnvKey = (typeof ALL_PROXY_ENV_KEYS)[number];
 type ProxyEnvSnapshot = Record<ProxyEnvKey, string | undefined>;
@@ -72,7 +72,7 @@ function captureProxyEnv(): ProxyEnvSnapshot {
     no_proxy: process.env["no_proxy"],
     NO_PROXY: process.env["NO_PROXY"],
     GLOBAL_AGENT_NO_PROXY: process.env["GLOBAL_AGENT_NO_PROXY"],
-    OPENCLAW_SSRF_PROXY_ACTIVE: process.env["OPENCLAW_SSRF_PROXY_ACTIVE"],
+    OPENCLAW_PROXY_ACTIVE: process.env["OPENCLAW_PROXY_ACTIVE"],
   };
 }
 
@@ -85,7 +85,7 @@ function injectProxyEnv(proxyUrl: string): ProxyEnvSnapshot {
     process.env[key] = proxyUrl;
   }
   process.env["GLOBAL_AGENT_FORCE_GLOBAL_AGENT"] = "false";
-  process.env["OPENCLAW_SSRF_PROXY_ACTIVE"] = "1";
+  process.env["OPENCLAW_PROXY_ACTIVE"] = "1";
   for (const key of NO_PROXY_ENV_KEYS) {
     process.env[key] = "";
   }
@@ -178,8 +178,8 @@ function isSupportedProxyUrl(value: string): boolean {
   }
 }
 
-function resolveProxyUrl(config: SsrFProxyConfig | undefined): string | null {
-  const candidate = config?.proxyUrl?.trim() || process.env["OPENCLAW_SSRF_PROXY_URL"]?.trim();
+function resolveProxyUrl(config: ProxyConfig | undefined): string | null {
+  const candidate = config?.proxyUrl?.trim() || process.env["OPENCLAW_PROXY_URL"]?.trim();
   if (!candidate) {
     return null;
   }
@@ -195,9 +195,7 @@ function redactProxyUrlForLog(value: string): string {
   }
 }
 
-export async function startSsrFProxy(
-  config: SsrFProxyConfig | undefined,
-): Promise<SsrFProxyHandle | null> {
+export async function startProxy(config: ProxyConfig | undefined): Promise<ProxyHandle | null> {
   if (config?.enabled !== true) {
     return null;
   }
@@ -205,8 +203,8 @@ export async function startSsrFProxy(
   const proxyUrl = resolveProxyUrl(config);
   if (proxyUrl === null) {
     logWarn(
-      "ssrf-proxy: enabled but no HTTP proxy URL is configured; set ssrfProxy.proxyUrl " +
-        "or OPENCLAW_SSRF_PROXY_URL to an http:// forward proxy. Using application-level SSRF guards only.",
+      "proxy: enabled but no HTTP proxy URL is configured; set proxy.proxyUrl " +
+        "or OPENCLAW_PROXY_URL to an http:// forward proxy. Using application-level SSRF guards only.",
     );
     return null;
   }
@@ -222,17 +220,17 @@ export async function startSsrFProxy(
     try {
       forceResetGlobalDispatcher();
     } catch (err) {
-      logWarn(`ssrf-proxy: failed to reset undici dispatcher: ${String(err)}`);
+      logWarn(`proxy: failed to reset undici dispatcher: ${String(err)}`);
     }
     try {
       restoreGlobalAgentRuntime(startupEnvSnapshot);
     } catch (err) {
-      logWarn(`ssrf-proxy: failed to reset global-agent: ${String(err)}`);
+      logWarn(`proxy: failed to reset global-agent: ${String(err)}`);
     }
     try {
       restoreNodeHttpStack();
     } catch (err) {
-      logWarn(`ssrf-proxy: failed to restore node HTTP stack: ${String(err)}`);
+      logWarn(`proxy: failed to restore node HTTP stack: ${String(err)}`);
     }
   };
 
@@ -243,16 +241,16 @@ export async function startSsrFProxy(
   } catch (err) {
     restoreRuntime();
     logWarn(
-      `ssrf-proxy: failed to activate external proxy routing - using application-level SSRF guards only. Reason: ${String(err)}`,
+      `proxy: failed to activate external proxy routing - using application-level SSRF guards only. Reason: ${String(err)}`,
     );
     return null;
   }
 
   logInfo(
-    `ssrf-proxy: routing process HTTP traffic through external proxy ${redactProxyUrlForLog(proxyUrl)}`,
+    `proxy: routing process HTTP traffic through external proxy ${redactProxyUrlForLog(proxyUrl)}`,
   );
 
-  const handle: SsrFProxyHandle = {
+  const handle: ProxyHandle = {
     proxyUrl,
     injectedProxyUrl: proxyUrl,
     envSnapshot: injectedEnvSnapshot,
@@ -267,7 +265,7 @@ export async function startSsrFProxy(
   return handle;
 }
 
-export async function stopSsrFProxy(handle: SsrFProxyHandle | null): Promise<void> {
+export async function stopProxy(handle: ProxyHandle | null): Promise<void> {
   if (!handle) {
     return;
   }

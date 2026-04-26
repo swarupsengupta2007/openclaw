@@ -136,7 +136,7 @@ export type OpenClawConfig = {
   memory?: MemoryConfig;
   mcp?: McpConfig;
   /** Network-level SSRF protection via an operator-managed forward proxy. */
-  ssrfProxy?: import("./zod-schema.ssrf-proxy.js").SsrFProxyConfig;
+  proxy?: import("./zod-schema.proxy.js").ProxyConfig;
 };
 
 declare const openClawConfigStateBrand: unique symbol;

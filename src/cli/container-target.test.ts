@@ -213,7 +213,7 @@ describe("maybeRunCliInContainer", () => {
     );
   });
 
-  it("passes the SSRF proxy URL env fallback into the child container CLI", () => {
+  it("passes the proxy URL env fallback into the child container CLI", () => {
     const spawnSync = vi
       .fn()
       .mockReturnValueOnce({
@@ -232,7 +232,7 @@ describe("maybeRunCliInContainer", () => {
     maybeRunCliInContainer(["node", "openclaw", "status"], {
       env: {
         OPENCLAW_CONTAINER: "demo",
-        OPENCLAW_SSRF_PROXY_URL: " http://proxy.internal:3128 ",
+        OPENCLAW_PROXY_URL: " http://proxy.internal:3128 ",
       } as NodeJS.ProcessEnv,
       spawnSync,
     });
@@ -248,7 +248,7 @@ describe("maybeRunCliInContainer", () => {
         "--env",
         "OPENCLAW_CLI_CONTAINER_BYPASS=1",
         "--env",
-        "OPENCLAW_SSRF_PROXY_URL=http://proxy.internal:3128",
+        "OPENCLAW_PROXY_URL=http://proxy.internal:3128",
         "demo",
         "openclaw",
         "status",
@@ -257,7 +257,7 @@ describe("maybeRunCliInContainer", () => {
         stdio: "inherit",
         env: {
           OPENCLAW_CONTAINER: "",
-          OPENCLAW_SSRF_PROXY_URL: " http://proxy.internal:3128 ",
+          OPENCLAW_PROXY_URL: " http://proxy.internal:3128 ",
         },
       },
     );

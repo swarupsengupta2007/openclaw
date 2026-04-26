@@ -1012,7 +1012,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   });
 
   it("uses the env proxy in strict mode when the SSRF proxy lifecycle is active", async () => {
-    vi.stubEnv("OPENCLAW_SSRF_PROXY_ACTIVE", "1");
+    vi.stubEnv("OPENCLAW_PROXY_ACTIVE", "1");
 
     await runProxyModeDispatcherTest({
       mode: GUARDED_FETCH_MODE.STRICT,

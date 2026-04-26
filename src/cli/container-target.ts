@@ -132,8 +132,8 @@ function buildContainerExecArgs(params: {
   stdoutIsTTY: boolean;
 }): string[] {
   const envFlag = params.exec.runtime === "docker" ? "-e" : "--env";
-  const ssrfProxyUrl = normalizeOptionalString(params.env.OPENCLAW_SSRF_PROXY_URL);
-  const ssrfProxyEnvArgs = ssrfProxyUrl ? [envFlag, `OPENCLAW_SSRF_PROXY_URL=${ssrfProxyUrl}`] : [];
+  const proxyUrl = normalizeOptionalString(params.env.OPENCLAW_PROXY_URL);
+  const proxyEnvArgs = proxyUrl ? [envFlag, `OPENCLAW_PROXY_URL=${proxyUrl}`] : [];
   const interactiveFlags = ["-i", ...(params.stdinIsTTY && params.stdoutIsTTY ? ["-t"] : [])];
   return [
     ...params.exec.argsPrefix,
@@ -143,7 +143,7 @@ function buildContainerExecArgs(params: {
     `OPENCLAW_CONTAINER_HINT=${params.containerName}`,
     envFlag,
     "OPENCLAW_CLI_CONTAINER_BYPASS=1",
-    ...ssrfProxyEnvArgs,
+    ...proxyEnvArgs,
     params.containerName,
     "openclaw",
     ...params.argv,

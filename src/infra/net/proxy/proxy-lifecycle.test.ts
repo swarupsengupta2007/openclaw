@@ -19,18 +19,14 @@ vi.mock("../../../logger.js", () => ({
 import { bootstrap as bootstrapGlobalAgent } from "global-agent";
 import { logInfo, logWarn } from "../../../logger.js";
 import { forceResetGlobalDispatcher } from "../undici-global-dispatcher.js";
-import {
-  _resetGlobalAgentBootstrapForTests,
-  startSsrFProxy,
-  stopSsrFProxy,
-} from "./proxy-lifecycle.js";
+import { _resetGlobalAgentBootstrapForTests, startProxy, stopProxy } from "./proxy-lifecycle.js";
 
 const mockForceResetGlobalDispatcher = vi.mocked(forceResetGlobalDispatcher);
 const mockBootstrapGlobalAgent = vi.mocked(bootstrapGlobalAgent);
 const mockLogInfo = vi.mocked(logInfo);
 const mockLogWarn = vi.mocked(logWarn);
 
-describe("startSsrFProxy", () => {
+describe("startProxy", () => {
   const savedEnv: Record<string, string | undefined> = {};
   const envKeysToClean = [
     "http_proxy",
@@ -43,8 +39,8 @@ describe("startSsrFProxy", () => {
     "GLOBAL_AGENT_HTTPS_PROXY",
     "GLOBAL_AGENT_FORCE_GLOBAL_AGENT",
     "GLOBAL_AGENT_NO_PROXY",
-    "OPENCLAW_SSRF_PROXY_ACTIVE",
-    "OPENCLAW_SSRF_PROXY_URL",
+    "OPENCLAW_PROXY_ACTIVE",
+    "OPENCLAW_PROXY_URL",
   ];
   const originalHttpRequest = http.request;
   const originalHttpGet = http.get;
@@ -90,7 +86,7 @@ describe("startSsrFProxy", () => {
   });
 
   it("returns null silently and does not touch env when not explicitly enabled", async () => {
-    const handle = await startSsrFProxy(undefined);
+    const handle = await startProxy(undefined);
 
     expect(handle).toBeNull();
     expect(process.env["http_proxy"]).toBeUndefined();
@@ -102,7 +98,7 @@ describe("startSsrFProxy", () => {
   });
 
   it("returns null and logs when enabled without a proxy URL", async () => {
-    const handle = await startSsrFProxy({ enabled: true });
+    const handle = await startProxy({ enabled: true });
 
     expect(handle).toBeNull();
     expect(process.env["http_proxy"]).toBeUndefined();
@@ -111,19 +107,19 @@ describe("startSsrFProxy", () => {
     );
   });
 
-  it("uses OPENCLAW_SSRF_PROXY_URL when config proxyUrl is omitted", async () => {
-    process.env["OPENCLAW_SSRF_PROXY_URL"] = "http://127.0.0.1:3128";
+  it("uses OPENCLAW_PROXY_URL when config proxyUrl is omitted", async () => {
+    process.env["OPENCLAW_PROXY_URL"] = "http://127.0.0.1:3128";
 
-    const handle = await startSsrFProxy({ enabled: true });
+    const handle = await startProxy({ enabled: true });
 
     expect(handle?.proxyUrl).toBe("http://127.0.0.1:3128");
     expect(process.env["HTTP_PROXY"]).toBe("http://127.0.0.1:3128");
   });
 
-  it("prefers config proxyUrl over OPENCLAW_SSRF_PROXY_URL", async () => {
-    process.env["OPENCLAW_SSRF_PROXY_URL"] = "http://127.0.0.1:3128";
+  it("prefers config proxyUrl over OPENCLAW_PROXY_URL", async () => {
+    process.env["OPENCLAW_PROXY_URL"] = "http://127.0.0.1:3128";
 
-    const handle = await startSsrFProxy({
+    const handle = await startProxy({
       enabled: true,
       proxyUrl: "http://127.0.0.1:3129",
     });
@@ -132,10 +128,10 @@ describe("startSsrFProxy", () => {
     expect(process.env["HTTP_PROXY"]).toBe("http://127.0.0.1:3129");
   });
 
-  it("rejects HTTPS proxy URLs from OPENCLAW_SSRF_PROXY_URL", async () => {
-    process.env["OPENCLAW_SSRF_PROXY_URL"] = "https://127.0.0.1:3128";
+  it("rejects HTTPS proxy URLs from OPENCLAW_PROXY_URL", async () => {
+    process.env["OPENCLAW_PROXY_URL"] = "https://127.0.0.1:3128";
 
-    const handle = await startSsrFProxy({ enabled: true });
+    const handle = await startProxy({ enabled: true });
 
     expect(handle).toBeNull();
     expect(process.env["HTTP_PROXY"]).toBeUndefined();
@@ -143,7 +139,7 @@ describe("startSsrFProxy", () => {
   });
 
   it("sets both undici and global-agent proxy env vars", async () => {
-    const handle = await startSsrFProxy({
+    const handle = await startProxy({
       enabled: true,
       proxyUrl: "http://127.0.0.1:3128",
     });
@@ -156,17 +152,17 @@ describe("startSsrFProxy", () => {
     expect(process.env["GLOBAL_AGENT_HTTP_PROXY"]).toBe("http://127.0.0.1:3128");
     expect(process.env["GLOBAL_AGENT_HTTPS_PROXY"]).toBe("http://127.0.0.1:3128");
     expect(process.env["GLOBAL_AGENT_FORCE_GLOBAL_AGENT"]).toBe("false");
-    expect(process.env["OPENCLAW_SSRF_PROXY_ACTIVE"]).toBe("1");
+    expect(process.env["OPENCLAW_PROXY_ACTIVE"]).toBe("1");
   });
 
   it("redacts proxy credentials before logging the active proxy URL", async () => {
-    await startSsrFProxy({
+    await startProxy({
       enabled: true,
       proxyUrl: "http://user:pass@127.0.0.1:3128",
     });
 
     expect(mockLogInfo).toHaveBeenCalledWith(
-      "ssrf-proxy: routing process HTTP traffic through external proxy http://127.0.0.1:3128",
+      "proxy: routing process HTTP traffic through external proxy http://127.0.0.1:3128",
     );
     expect(mockLogInfo).not.toHaveBeenCalledWith(expect.stringContaining("user:pass"));
   });
@@ -176,7 +172,7 @@ describe("startSsrFProxy", () => {
     process.env["no_proxy"] = "localhost";
     process.env["GLOBAL_AGENT_NO_PROXY"] = "localhost";
 
-    await startSsrFProxy({
+    await startProxy({
       enabled: true,
       proxyUrl: "http://127.0.0.1:3128",
     });
@@ -187,7 +183,7 @@ describe("startSsrFProxy", () => {
   });
 
   it("activates undici and global-agent routing", async () => {
-    await startSsrFProxy({
+    await startProxy({
       enabled: true,
       proxyUrl: "http://127.0.0.1:3128",
     });
@@ -207,7 +203,7 @@ describe("startSsrFProxy", () => {
       HTTPS_PROXY: "",
     };
 
-    const handle = await startSsrFProxy({
+    const handle = await startProxy({
       enabled: true,
       proxyUrl: "http://127.0.0.1:3128",
     });
@@ -217,14 +213,14 @@ describe("startSsrFProxy", () => {
     expect(process.env["NO_PROXY"]).toBe("");
     mockForceResetGlobalDispatcher.mockClear();
 
-    await stopSsrFProxy(handle);
+    await stopProxy(handle);
 
     expect(process.env["HTTP_PROXY"]).toBe("http://previous.example.com:8080");
     expect(process.env["NO_PROXY"]).toBe("corp.example.com");
     expect(process.env["GLOBAL_AGENT_HTTP_PROXY"]).toBe("http://previous-global.example.com:8080");
     expect(process.env["GLOBAL_AGENT_HTTPS_PROXY"]).toBe("http://previous-global.example.com:8443");
     expect(process.env["GLOBAL_AGENT_NO_PROXY"]).toBe("global.corp.example.com");
-    expect(process.env["OPENCLAW_SSRF_PROXY_ACTIVE"]).toBeUndefined();
+    expect(process.env["OPENCLAW_PROXY_ACTIVE"]).toBeUndefined();
     const agent = (global as Record<string, unknown>)["GLOBAL_AGENT"] as Record<string, unknown>;
     expect(agent["HTTP_PROXY"]).toBe("http://previous-global.example.com:8080");
     expect(agent["HTTPS_PROXY"]).toBe("http://previous-global.example.com:8443");
@@ -253,14 +249,14 @@ describe("startSsrFProxy", () => {
       };
     });
 
-    const handle = await startSsrFProxy({
+    const handle = await startProxy({
       enabled: true,
       proxyUrl: "http://127.0.0.1:3128",
     });
 
     expect(http.request).toBe(patchedHttpRequest);
 
-    await stopSsrFProxy(handle);
+    await stopProxy(handle);
 
     expect(http.request).toBe(originalHttpRequest);
     expect(http.get).toBe(originalHttpGet);
@@ -276,7 +272,7 @@ describe("startSsrFProxy", () => {
       throw new Error("dispatcher failed");
     });
 
-    const handle = await startSsrFProxy({
+    const handle = await startProxy({
       enabled: true,
       proxyUrl: "http://127.0.0.1:3128",
     });
@@ -291,7 +287,7 @@ describe("startSsrFProxy", () => {
       throw new Error("bootstrap failed");
     });
 
-    const handle = await startSsrFProxy({
+    const handle = await startProxy({
       enabled: true,
       proxyUrl: "http://127.0.0.1:3128",
     });
@@ -303,7 +299,7 @@ describe("startSsrFProxy", () => {
 
   it("kill restores env synchronously during hard process exit", async () => {
     process.env["NO_PROXY"] = "corp.example.com";
-    const handle = await startSsrFProxy({
+    const handle = await startProxy({
       enabled: true,
       proxyUrl: "http://127.0.0.1:3128",
     });
@@ -315,7 +311,7 @@ describe("startSsrFProxy", () => {
     expect(process.env["NO_PROXY"]).toBe("corp.example.com");
   });
 
-  it("stopSsrFProxy is a no-op when handle is null", async () => {
-    await expect(stopSsrFProxy(null)).resolves.toBeUndefined();
+  it("stopProxy is a no-op when handle is null", async () => {
+    await expect(stopProxy(null)).resolves.toBeUndefined();
   });
 });

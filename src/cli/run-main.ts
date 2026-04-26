@@ -8,8 +8,8 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { normalizeEnv } from "../infra/env.js";
 import { formatUncaughtError } from "../infra/errors.js";
 import { isMainModule } from "../infra/is-main.js";
-import { startSsrFProxy, stopSsrFProxy } from "../infra/net/ssrf-proxy/proxy-lifecycle.js";
-import type { SsrFProxyHandle } from "../infra/net/ssrf-proxy/proxy-lifecycle.js";
+import { startProxy, stopProxy } from "../infra/net/proxy/proxy-lifecycle.js";
+import type { ProxyHandle } from "../infra/net/proxy/proxy-lifecycle.js";
 import { ensureGlobalUndiciEnvProxyDispatcher } from "../infra/net/undici-global-dispatcher.js";
 import { ensureOpenClawCliOnPath } from "../infra/path-env.js";
 import { assertSupportedRuntime } from "../infra/runtime-guard.js";
@@ -88,7 +88,7 @@ export function shouldStartCrestodianForModernOnboard(argv: string[]): boolean {
   );
 }
 
-export function shouldStartSsrFProxyForCli(argv: string[]): boolean {
+export function shouldStartProxyForCli(argv: string[]): boolean {
   const invocation = resolveCliArgvInvocation(argv);
   const [primary, secondary] = invocation.commandPath;
   if (invocation.hasHelpOrVersion || !primary) {
@@ -228,41 +228,41 @@ export async function runCli(argv: string[] = process.argv) {
   // Enforce the minimum supported runtime before doing any work.
   assertSupportedRuntime();
 
-  // Activate external network-level SSRF proxy routing only for runtime commands.
+  // Activate external network-level proxy routing only for runtime commands.
   // Short-lived Gateway client commands keep direct control-plane access to the
   // local Gateway while the Gateway/node/embedded-agent runtime owns egress policy.
   // If config can't be loaded or no proxy URL is configured, application-level
   // guards remain active.
   // The handle is captured so we can restore process proxy state on exit.
-  let ssrfProxyHandle: SsrFProxyHandle | null = null;
-  const stopStartedSsrFProxy = async () => {
-    const handle = ssrfProxyHandle;
-    ssrfProxyHandle = null;
+  let proxyHandle: ProxyHandle | null = null;
+  const stopStartedProxy = async () => {
+    const handle = proxyHandle;
+    proxyHandle = null;
     if (handle) {
-      await stopSsrFProxy(handle);
+      await stopProxy(handle);
     }
   };
-  const killStartedSsrFProxy = () => {
-    const handle = ssrfProxyHandle;
-    ssrfProxyHandle = null;
+  const killStartedProxy = () => {
+    const handle = proxyHandle;
+    proxyHandle = null;
     handle?.kill("SIGTERM");
   };
   try {
-    if (shouldStartSsrFProxyForCli(normalizedArgv)) {
+    if (shouldStartProxyForCli(normalizedArgv)) {
       const { loadConfig } = await import("../config/io.js");
       const config = loadConfig();
-      ssrfProxyHandle = await startSsrFProxy(config?.ssrfProxy ?? undefined);
+      proxyHandle = await startProxy(config?.proxy ?? undefined);
     }
   } catch {
     // Config load may fail for many CLI commands that don't need it (e.g.
     // help, version). Don't block startup — application-level guards remain.
-    ssrfProxyHandle = null;
+    proxyHandle = null;
   }
   // Graceful shutdown - restore proxy routing when openclaw exits via any signal.
   let onSigterm: (() => void) | null = null;
   let onSigint: (() => void) | null = null;
   let onExit: (() => void) | null = null;
-  if (ssrfProxyHandle) {
+  if (proxyHandle) {
     const shutdown = (exitCode: number) => {
       if (onSigterm) {
         process.off("SIGTERM", onSigterm);
@@ -270,13 +270,13 @@ export async function runCli(argv: string[] = process.argv) {
       if (onSigint) {
         process.off("SIGINT", onSigint);
       }
-      void stopStartedSsrFProxy().finally(() => {
+      void stopStartedProxy().finally(() => {
         process.exit(exitCode);
       });
     };
     onSigterm = () => shutdown(143);
     onSigint = () => shutdown(130);
-    onExit = () => killStartedSsrFProxy();
+    onExit = () => killStartedProxy();
     process.once("SIGTERM", onSigterm);
     process.once("SIGINT", onSigint);
     process.once("exit", onExit);
@@ -421,7 +421,7 @@ export async function runCli(argv: string[] = process.argv) {
     if (onExit) {
       process.off("exit", onExit);
     }
-    await stopStartedSsrFProxy();
+    await stopStartedProxy();
     await closeCliMemoryManagers();
   }
 }

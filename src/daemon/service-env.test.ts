@@ -441,16 +441,16 @@ describe("buildServiceEnvironment", () => {
     expect(env.all_proxy).toBe("socks5://proxy.local:1080");
   });
 
-  it("forwards SSRF proxy URL env fallback for installed gateway services", () => {
+  it("forwards proxy URL env fallback for installed gateway services", () => {
     const env = buildServiceEnvironment({
       env: {
         HOME: "/home/user",
-        OPENCLAW_SSRF_PROXY_URL: " http://127.0.0.1:3128 ",
+        OPENCLAW_PROXY_URL: " http://127.0.0.1:3128 ",
       },
       port: 18789,
     });
 
-    expect(env.OPENCLAW_SSRF_PROXY_URL).toBe("http://127.0.0.1:3128");
+    expect(env.OPENCLAW_PROXY_URL).toBe("http://127.0.0.1:3128");
   });
 
   it("omits PATH on Windows so Scheduled Tasks can inherit the current shell path", () => {
@@ -526,15 +526,15 @@ describe("buildNodeServiceEnvironment", () => {
     expect(env.no_proxy).toBe("localhost,127.0.0.1");
   });
 
-  it("forwards SSRF proxy URL env fallback for installed node services", () => {
+  it("forwards proxy URL env fallback for installed node services", () => {
     const env = buildNodeServiceEnvironment({
       env: {
         HOME: "/home/user",
-        OPENCLAW_SSRF_PROXY_URL: " http://127.0.0.1:3128 ",
+        OPENCLAW_PROXY_URL: " http://127.0.0.1:3128 ",
       },
     });
 
-    expect(env.OPENCLAW_SSRF_PROXY_URL).toBe("http://127.0.0.1:3128");
+    expect(env.OPENCLAW_PROXY_URL).toBe("http://127.0.0.1:3128");
   });
 
   it("forwards TMPDIR for node services", () => {

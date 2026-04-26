@@ -21,6 +21,7 @@ import {
 import { HookMappingSchema, HooksGmailSchema, InternalHooksSchema } from "./zod-schema.hooks.js";
 import { PluginInstallRecordShape } from "./zod-schema.installs.js";
 import { ChannelsSchema } from "./zod-schema.providers.js";
+import { ProxyConfigSchema } from "./zod-schema.proxy.js";
 import { sensitive } from "./zod-schema.sensitive.js";
 import {
   CommandsSchema,
@@ -28,7 +29,6 @@ import {
   SessionSchema,
   SessionSendPolicySchema,
 } from "./zod-schema.session.js";
-import { SsrFProxyConfigSchema } from "./zod-schema.ssrf-proxy.js";
 
 const BrowserSnapshotDefaultsSchema = z
   .object({
@@ -1021,7 +1021,7 @@ export const OpenClawSchema = z
           .strict(),
       )
       .optional(),
-    ssrfProxy: SsrFProxyConfigSchema,
+    proxy: ProxyConfigSchema,
   })
   .strict()
   .superRefine((cfg, ctx) => {

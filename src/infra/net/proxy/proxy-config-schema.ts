@@ -1,5 +1,5 @@
 /**
- * Zod schema and TypeScript types for the user-facing `ssrfProxy` configuration key.
+ * Zod schema and TypeScript types for the user-facing `proxy` configuration key.
  */
 
 import { z } from "zod";
@@ -13,11 +13,11 @@ function isHttpProxyUrl(value: string): boolean {
   }
 }
 
-export const SsrFProxyConfigSchema = z
+export const ProxyConfigSchema = z
   .object({
     /**
      * Whether to route process-wide HTTP traffic through an operator-managed
-     * SSRF-filtering forward proxy.
+     * filtering forward proxy.
      * Default: false (disabled).
      *
      * Set to true to enable the proxy. When disabled, OpenClaw relies on
@@ -43,4 +43,4 @@ export const SsrFProxyConfigSchema = z
   .strict()
   .optional();
 
-export type SsrFProxyConfig = z.infer<typeof SsrFProxyConfigSchema>;
+export type ProxyConfig = z.infer<typeof ProxyConfigSchema>;
