@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ProxyConfigSchema } from "./proxy-config-schema.js";
+import { ProxyConfigSchema } from "./zod-schema.proxy.js";
 
 describe("ProxyConfigSchema", () => {
   it("accepts undefined (optional)", () => {

@@ -1,8 +1,26 @@
-/**
- * Re-export of the proxy Zod schema for use in the main config schema.
- * The canonical definition lives in infra/net/proxy to keep it co-located
- * with the implementation, but the config schema imports it from here to keep
- * the config layer dependency graph clean.
- */
-export { ProxyConfigSchema } from "../infra/net/proxy/proxy-config-schema.js";
-export type { ProxyConfig } from "../infra/net/proxy/proxy-config-schema.js";
+import { z } from "zod";
+
+function isHttpProxyUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+export const ProxyConfigSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    proxyUrl: z
+      .string()
+      .url()
+      .refine(isHttpProxyUrl, {
+        message: "proxyUrl must use http://",
+      })
+      .optional(),
+  })
+  .strict()
+  .optional();
+
+export type ProxyConfig = z.infer<typeof ProxyConfigSchema>;

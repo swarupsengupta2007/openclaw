@@ -10,9 +10,9 @@
 import http from "node:http";
 import https from "node:https";
 import { bootstrap as bootstrapGlobalAgent } from "global-agent";
+import type { ProxyConfig } from "../../../config/zod-schema.proxy.js";
 import { logInfo, logWarn } from "../../../logger.js";
 import { forceResetGlobalDispatcher } from "../undici-global-dispatcher.js";
-import type { ProxyConfig } from "./proxy-config-schema.js";
 
 export type ProxyHandle = {
   /** The operator-managed proxy URL injected into process.env. */

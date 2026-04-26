@@ -33,6 +33,7 @@ import type { PluginsConfig } from "./types.plugins.js";
 import type { SecretsConfig } from "./types.secrets.js";
 import type { SkillsConfig } from "./types.skills.js";
 import type { ToolsConfig } from "./types.tools.js";
+import type { ProxyConfig } from "./zod-schema.proxy.js";
 
 export type SurfaceConfigEntry = {
   silentReply?: SilentReplyPolicyShape;
@@ -136,7 +137,7 @@ export type OpenClawConfig = {
   memory?: MemoryConfig;
   mcp?: McpConfig;
   /** Network-level SSRF protection via an operator-managed forward proxy. */
-  proxy?: import("./zod-schema.proxy.js").ProxyConfig;
+  proxy?: ProxyConfig;
 };
 
 declare const openClawConfigStateBrand: unique symbol;

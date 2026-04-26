@@ -21,5 +21,5 @@
 export { startProxy, stopProxy } from "./proxy-lifecycle.js";
 export type { ProxyHandle } from "./proxy-lifecycle.js";
 
-export { ProxyConfigSchema } from "./proxy-config-schema.js";
-export type { ProxyConfig } from "./proxy-config-schema.js";
+export { ProxyConfigSchema } from "../../../config/zod-schema.proxy.js";
+export type { ProxyConfig } from "../../../config/zod-schema.proxy.js";
