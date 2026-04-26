@@ -215,6 +215,14 @@ describe("runCli exit behavior", () => {
     expect(startProxyMock).toHaveBeenCalledWith(undefined);
   });
 
+  it("starts the proxy for unknown plugin commands by default", async () => {
+    tryRouteCliMock.mockResolvedValueOnce(true);
+
+    await runCli(["node", "openclaw", "googlemeet", "login"]);
+
+    expect(startProxyMock).toHaveBeenCalledWith(undefined);
+  });
+
   it("stops the proxy after normal gateway runtime completion", async () => {
     const handle = makeProxyHandle();
     startProxyMock.mockResolvedValueOnce(handle);

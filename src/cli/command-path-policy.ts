@@ -1,5 +1,11 @@
 import { isGatewayConfigBypassCommandPath } from "../gateway/explicit-connection-policy.js";
-import { cliCommandCatalog, type CliCommandPathPolicy } from "./command-catalog.js";
+import { getCommandPathWithRootOptions } from "./argv.js";
+import {
+  cliCommandCatalog,
+  type CliCommandCatalogEntry,
+  type CliCommandPathPolicy,
+  type CliNetworkProxyPolicy,
+} from "./command-catalog.js";
 import { matchesCommandPath } from "./command-path-matches.js";
 
 const DEFAULT_CLI_COMMAND_PATH_POLICY: CliCommandPathPolicy = {
@@ -8,6 +14,7 @@ const DEFAULT_CLI_COMMAND_PATH_POLICY: CliCommandPathPolicy = {
   loadPlugins: "never",
   hideBanner: false,
   ensureCliPath: true,
+  networkProxy: "default",
 };
 
 export function resolveCliCommandPathPolicy(commandPath: string[]): CliCommandPathPolicy {
@@ -23,6 +30,57 @@ export function resolveCliCommandPathPolicy(commandPath: string[]): CliCommandPa
   }
   if (isGatewayConfigBypassCommandPath(commandPath)) {
     resolvedPolicy.bypassConfigGuard = true;
+  }
+  return resolvedPolicy;
+}
+
+function getCliCommandTokens(argv: string[]): string[] {
+  return getCommandPathWithRootOptions(argv, argv.length);
+}
+
+function isCommandPathPrefix(commandPath: string[], pattern: readonly string[]): boolean {
+  return pattern.every((segment, index) => commandPath[index] === segment);
+}
+
+export function resolveCliCatalogCommandPath(
+  argv: string[],
+  catalog: readonly CliCommandCatalogEntry[] = cliCommandCatalog,
+): string[] {
+  const tokens = getCliCommandTokens(argv);
+  if (tokens.length === 0) {
+    return [];
+  }
+  let bestMatch: readonly string[] | null = null;
+  for (const entry of catalog) {
+    if (!isCommandPathPrefix(tokens, entry.commandPath)) {
+      continue;
+    }
+    if (!bestMatch || entry.commandPath.length > bestMatch.length) {
+      bestMatch = entry.commandPath;
+    }
+  }
+  return bestMatch ? [...bestMatch] : [tokens[0] as string];
+}
+
+export function resolveCliNetworkProxyPolicy(
+  argv: string[],
+  catalog: readonly CliCommandCatalogEntry[] = cliCommandCatalog,
+): CliNetworkProxyPolicy {
+  const commandPath = resolveCliCatalogCommandPath(argv, catalog);
+  const commandTokens = getCliCommandTokens(argv);
+  let resolvedPolicy = DEFAULT_CLI_COMMAND_PATH_POLICY.networkProxy;
+  for (const entry of catalog) {
+    const networkProxy = entry.policy?.networkProxy;
+    if (!networkProxy) {
+      continue;
+    }
+    if (!matchesCommandPath(commandPath, entry.commandPath, { exact: entry.exact })) {
+      continue;
+    }
+    resolvedPolicy =
+      typeof networkProxy === "function"
+        ? networkProxy({ argv, commandPath: commandTokens })
+        : networkProxy;
   }
   return resolvedPolicy;
 }

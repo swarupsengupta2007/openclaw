@@ -1,5 +1,8 @@
 import { isTruthyEnvValue } from "../infra/env.js";
-import { resolveCliCommandPathPolicy } from "./command-path-policy.js";
+import {
+  resolveCliCommandPathPolicy,
+  resolveCliNetworkProxyPolicy,
+} from "./command-path-policy.js";
 
 export function shouldBypassConfigGuardForCommandPath(commandPath: string[]): boolean {
   return resolveCliCommandPathPolicy(commandPath).bypassConfigGuard;
@@ -36,6 +39,10 @@ export function shouldHideCliBannerForCommandPath(
 
 export function shouldEnsureCliPathForCommandPath(commandPath: string[]): boolean {
   return commandPath.length === 0 || resolveCliCommandPathPolicy(commandPath).ensureCliPath;
+}
+
+export function shouldStartNetworkProxyForCli(argv: string[]): boolean {
+  return resolveCliNetworkProxyPolicy(argv) === "default";
 }
 
 export function resolveCliStartupPolicy(params: {

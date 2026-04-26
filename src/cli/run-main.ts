@@ -28,12 +28,14 @@ import {
   normalizeOptionalString,
 } from "../shared/string-coerce.js";
 import { resolveCliArgvInvocation } from "./argv-invocation.js";
-import { hasFlag } from "./argv.js";
 import {
   shouldRegisterPrimaryCommandOnly,
   shouldSkipPluginCommandRegistration,
 } from "./command-registration-policy.js";
-import { shouldEnsureCliPathForCommandPath } from "./command-startup-policy.js";
+import {
+  shouldEnsureCliPathForCommandPath,
+  shouldStartNetworkProxyForCli,
+} from "./command-startup-policy.js";
 import { maybeRunCliInContainer, parseCliContainerArgs } from "./container-target.js";
 import { applyCliProfileEnv, parseCliProfileArgs } from "./profile.js";
 import { tryRouteCli } from "./route.js";
@@ -90,99 +92,11 @@ export function shouldStartCrestodianForModernOnboard(argv: string[]): boolean {
 
 export function shouldStartProxyForCli(argv: string[]): boolean {
   const invocation = resolveCliArgvInvocation(argv);
-  const [primary, secondary] = invocation.commandPath;
+  const [primary] = invocation.commandPath;
   if (invocation.hasHelpOrVersion || !primary) {
     return false;
   }
-  if (primary === "gateway") {
-    return secondary === undefined || secondary === "run";
-  }
-  if (primary === "node") {
-    return secondary === "run";
-  }
-  if (primary === "agent") {
-    return hasFlag(argv, "--local");
-  }
-  if (shouldBypassProxyForCliCommand(invocation.commandPath, argv)) {
-    return false;
-  }
-  return true;
-}
-
-const PROXY_BYPASS_PRIMARY_COMMANDS = new Set([
-  "acp",
-  "agents",
-  "approvals",
-  "backup",
-  "chat",
-  "completion",
-  "config",
-  "cron",
-  "dashboard",
-  "daemon",
-  "devices",
-  "exec-policy",
-  "health",
-  "hooks",
-  "logs",
-  "mcp",
-  "nodes",
-  "pairing",
-  "proxy",
-  "qr",
-  "reset",
-  "secrets",
-  "security",
-  "sessions",
-  "status",
-  "system",
-  "tasks",
-  "terminal",
-  "tui",
-  "uninstall",
-]);
-
-const PROXY_BYPASS_EXACT_COMMAND_PATHS = [
-  ["channels"],
-  ["channels", "add"],
-  ["channels", "list"],
-  ["channels", "logs"],
-  ["channels", "remove"],
-  ["channels", "resolve"],
-  ["models", "list"],
-  ["skills"],
-  ["skills", "check"],
-  ["skills", "info"],
-  ["skills", "list"],
-] as const;
-
-function shouldBypassProxyForCliCommand(commandPath: string[], argv: string[]): boolean {
-  const [primary] = commandPath;
-  if (!primary) {
-    return true;
-  }
-  if (primary === "gateway" || primary === "node" || primary === "agent") {
-    return true;
-  }
-  if (PROXY_BYPASS_PRIMARY_COMMANDS.has(primary)) {
-    return true;
-  }
-  if (isExactCommandPath(commandPath, ["channels", "status"])) {
-    return !hasFlag(argv, "--probe");
-  }
-  if (isExactCommandPath(commandPath, ["models", "status"])) {
-    return !hasFlag(argv, "--probe");
-  }
-  return PROXY_BYPASS_EXACT_COMMAND_PATHS.some((candidate) =>
-    isExactCommandPath(commandPath, candidate),
-  );
-}
-
-function isExactCommandPath(commandPath: string[], candidate: readonly string[]): boolean {
-  return (
-    commandPath.length === candidate.length &&
-    candidate.every((part, index) => commandPath[index] === part)
-  );
+  return shouldStartNetworkProxyForCli(argv);
 }
 
 export function resolveMissingPluginCommandMessage(
